@@ -66,6 +66,7 @@ Detailed documentation is available in the [`docs/`](docs/) directory:
 - [Data Source](docs/datasource.md)
 - [REST API](docs/rest-api.md)
 - [Retry & Stop](docs/retry-stop.md)
+- [Dashboard](docs/dashboard.md)
 
 ## Contributing
 

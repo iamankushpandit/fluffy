@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluffy Batch Dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-left">
+      <div class="header-title"><span>Fluffy</span> Batch Dashboard</div>
+      <span id="dashboard-title" style="display:none"></span>
+    </div>
+    <div class="header-right">
+      <div id="auth-section" class="token-section" style="display:none">
+        <label for="token-input" class="text-muted" style="font-size:0.82rem;">Token:</label>
+        <input type="password" id="token-input" class="token-input" placeholder="Bearer token" autocomplete="off">
+      </div>
+      <span id="refresh-indicator" class="refresh-indicator"></span>
+      <button id="btn-refresh" class="btn btn-sm" title="Refresh now">↻ Refresh</button>
+      <button id="btn-toggle-pause" class="btn btn-sm" title="Pause / resume auto-refresh">⏸ Pause</button>
+      <button id="theme-toggle" class="btn btn-sm" title="Toggle dark/light theme">◑ Theme</button>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+
+    <!-- Summary Cards -->
+    <section class="section" aria-label="Summary">
+      <div id="summary-cards" class="summary-cards"></div>
+    </section>
+
+    <!-- Registered Jobs -->
+    <section class="section" aria-label="Registered Jobs">
+      <div class="section-header">
+        <h2 class="section-title">Registered Jobs</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Mode</th>
+              <th>Max Concurrency</th>
+              <th>Required Params</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-tbody">
+            <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Executions -->
+    <section class="section" aria-label="Executions">
+      <div class="section-header">
+        <h2 class="section-title">Executions</h2>
+        <div class="filters">
+          <div id="status-filters" class="filter-group"></div>
+          <input type="text" id="search-input" class="search-input" placeholder="Search by name or ID…" aria-label="Search executions">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Job Name</th>
+              <th>Status</th>
+              <th>Requested By</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Queue</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="executions-tbody">
+            <tr><td colspan="8" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="detail-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Execution Details">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Execution Details</h3>
+        <button class="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Start Job Modal -->
+  <div id="start-job-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Start Job">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="start-job-title">Start Job</h3>
+        <button class="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <form id="start-job-form"></form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- Scripts (order matters) -->
+  <script src="js/api-client.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
