@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:fluffydb}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:fluffy}
+    password: ${POSTGRES_PASSWORD:fluffy}
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  threads:
+    virtual:
+      enabled: true
+
+fluffy:
+  batch:
+    backend:
+      type: kafka
+      kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+        topic: ${KAFKA_TOPIC:fluffy-jobs}
+        group-id: ${KAFKA_GROUP_ID:fluffy-batch}
+
+logging:
+  level:
+    com.fluffy: INFO
