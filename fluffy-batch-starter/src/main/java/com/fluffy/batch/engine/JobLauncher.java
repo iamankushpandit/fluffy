@@ -63,9 +63,7 @@ public class JobLauncher {
 
         JobDefinition def = jobRegistry.get(jobName);
 
-        Map<String, String> params = !request.parameters().isEmpty()
-                ? new HashMap<>(request.parameters())
-                : new HashMap<>();
+        Map<String, String> params = new HashMap<>(request.parameters());
 
         for (String required : def.requiredParams()) {
             if (!params.containsKey(required) || params.get(required) == null) {
