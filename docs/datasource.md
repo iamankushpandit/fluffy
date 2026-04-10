@@ -14,6 +14,8 @@ spring:
       ddl-auto: create-drop
 ```
 
+Hibernate 6 (bundled with Spring Boot 3.4) auto-detects the database dialect, so there is no need to specify `database-platform`.
+
 ## Production Database
 
 Override with any JPA-compatible database:

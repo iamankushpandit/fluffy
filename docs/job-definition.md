@@ -34,6 +34,8 @@ JobDefinition def = JobDefinition.builder("my-job")
 jobRegistry.register(def);
 ```
 
+`JobDefinition` is a Java record — its accessor methods use the record style (e.g. `def.name()`, `def.async()`).
+
 ## JobContext
 
 - `getParam(key)` - get optional parameter

@@ -36,10 +36,9 @@ public class JobController {
             @RequestHeader(value = "X-User-Id", defaultValue = "anonymous") String userId) {
 
         if (request == null) {
-            request = new JobRequest();
-        }
-        if (request.getRequestedBy() == null) {
-            request.setRequestedBy(userId);
+            request = new JobRequest(null, null, userId);
+        } else if (request.requestedBy() == null) {
+            request = request.withRequestedBy(userId);
         }
 
         Long executionId = jobLauncher.launch(jobName, request);
@@ -73,10 +72,10 @@ public class JobController {
 
     @GetMapping("/executions")
     public ResponseEntity<List<JobStatusResponse>> listExecutions() {
-        List<JobExecution> executions = executionRepository.findAllByOrderByStartTimeDesc();
-        List<JobStatusResponse> responses = executions.stream()
+        List<JobStatusResponse> responses = executionRepository.findAllByOrderByStartTimeDesc()
+                .stream()
                 .map(JobStatusResponse::from)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(responses);
     }
 
@@ -85,15 +84,15 @@ public class JobController {
         List<Map<String, Object>> jobs = jobRegistry.getAll().stream()
                 .map(def -> {
                     Map<String, Object> info = new LinkedHashMap<>();
-                    info.put("name", def.getName());
-                    info.put("description", def.getDescription());
-                    info.put("maxConcurrency", def.getMaxConcurrency());
-                    info.put("async", def.isAsync());
-                    info.put("timeoutSeconds", def.getTimeoutSeconds());
-                    info.put("requiredParams", def.getRequiredParams());
+                    info.put("name", def.name());
+                    info.put("description", def.description());
+                    info.put("maxConcurrency", def.maxConcurrency());
+                    info.put("async", def.async());
+                    info.put("timeoutSeconds", def.timeoutSeconds());
+                    info.put("requiredParams", def.requiredParams());
                     return info;
                 })
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(jobs);
     }
 }

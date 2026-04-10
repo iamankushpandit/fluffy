@@ -26,10 +26,15 @@ import java.util.concurrent.ScheduledExecutorService;
          JobQueueManager.class, JobController.class, GlobalExceptionHandler.class})
 public class BatchJobAutoConfiguration {
 
+    /**
+     * Uses Java 21 virtual threads for lightweight, high-throughput job execution.
+     * Virtual threads are ideal for batch jobs that spend time waiting on I/O,
+     * as they scale to millions of concurrent tasks without exhausting OS threads.
+     */
     @Bean(name = "jobExecutorService")
     @ConditionalOnMissingBean(name = "jobExecutorService")
     public ExecutorService jobExecutorService() {
-        return Executors.newCachedThreadPool();
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Bean(name = "jobScheduledExecutorService")

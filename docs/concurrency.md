@@ -14,5 +14,7 @@ When a running job finishes, the next queued job starts automatically.
 
 ## Async vs Sync
 
-- `async = true`: runs on a cached thread pool
+- `async = true`: runs on a Java 21 virtual thread via `Executors.newVirtualThreadPerTaskExecutor()`
 - `async = false`: runs on the caller's thread (blocks the HTTP request)
+
+Virtual threads are lightweight and ideal for I/O-bound jobs. Thousands of async jobs can run concurrently without exhausting OS threads.

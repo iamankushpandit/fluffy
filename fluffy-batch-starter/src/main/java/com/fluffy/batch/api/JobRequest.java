@@ -1,24 +1,31 @@
 package com.fluffy.batch.api;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-public class JobRequest {
-    private Map<String, String> parameters;
-    private String arguments;
-    private String requestedBy;
-
-    public JobRequest() {}
-
-    public Map<String, String> getParameters() {
-        return parameters != null ? parameters : Collections.emptyMap();
+/**
+ * Immutable request to launch a batch job.
+ *
+ * @param parameters  key-value parameters forwarded to the job handler
+ * @param arguments   free-form argument string
+ * @param requestedBy identity of the caller (defaults to "anonymous")
+ */
+public record JobRequest(
+        Map<String, String> parameters,
+        String arguments,
+        String requestedBy
+) {
+    /** Canonical constructor – stores an unmodifiable copy of the parameter map. */
+    public JobRequest {
+        parameters = parameters != null ? Map.copyOf(parameters) : Map.of();
     }
-    public void setParameters(Map<String, String> parameters) { this.parameters = parameters; }
 
-    public String getArguments() { return arguments; }
-    public void setArguments(String arguments) { this.arguments = arguments; }
+    /** No-arg convenience constructor used for deserialization and default launches. */
+    public JobRequest() {
+        this(null, null, null);
+    }
 
-    public String getRequestedBy() { return requestedBy; }
-    public void setRequestedBy(String requestedBy) { this.requestedBy = requestedBy; }
+    /** Returns a new request with the given {@code requestedBy} value. */
+    public JobRequest withRequestedBy(String requestedBy) {
+        return new JobRequest(this.parameters, this.arguments, requestedBy);
+    }
 }

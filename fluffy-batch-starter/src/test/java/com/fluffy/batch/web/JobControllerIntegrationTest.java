@@ -51,7 +51,8 @@ class JobControllerIntegrationTest {
         mockMvc.perform(post("/api/jobs/unknown-job-xyz/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found"));
     }
 
     @Test
@@ -101,6 +102,7 @@ class JobControllerIntegrationTest {
         mockMvc.perform(post("/api/jobs/" + jobName + "/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"));
     }
 }

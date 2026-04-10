@@ -14,9 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,35 +63,33 @@ public class JobLauncher {
 
         JobDefinition def = jobRegistry.get(jobName);
 
-        Map<String, String> params = request.getParameters() != null
-                ? new HashMap<>(request.getParameters())
-                : new HashMap<>();
+        Map<String, String> params = new HashMap<>(request.parameters());
 
-        for (String required : def.getRequiredParams()) {
+        for (String required : def.requiredParams()) {
             if (!params.containsKey(required) || params.get(required) == null) {
                 throw new IllegalArgumentException("Missing required parameter: " + required);
             }
         }
 
-        String requestedBy = request.getRequestedBy() != null ? request.getRequestedBy() : "anonymous";
+        String requestedBy = request.requestedBy() != null ? request.requestedBy() : "anonymous";
 
         JobExecution execution = new JobExecution();
         execution.setJobName(jobName);
         execution.setStatus(JobStatus.IN_QUEUE);
         execution.setRequestedBy(requestedBy);
-        execution.setStartTime(Timestamp.from(Instant.now()));
-        execution.setArguments(request.getArguments());
+        execution.setStartTime(Instant.now());
+        execution.setArguments(request.arguments());
         execution.setParameters(paramsToString(params));
         execution = executionRepository.save(execution);
 
         Long executionId = execution.getId();
 
-        JobContext context = new JobContext(executionId, jobName, requestedBy, params, request.getArguments());
+        JobContext context = new JobContext(executionId, jobName, requestedBy, params, request.arguments());
 
-        if (concurrencyManager.canRun(jobName, def.getMaxConcurrency())) {
+        if (concurrencyManager.canRun(jobName, def.maxConcurrency())) {
             concurrencyManager.increment(jobName);
             updateStatus(executionId, JobStatus.STARTED);
-            if (def.isAsync()) {
+            if (def.async()) {
                 runJobAsync(executionId, def, context);
             } else {
                 runJobSync(executionId, def, context);
@@ -144,10 +140,11 @@ public class JobLauncher {
             throw new IllegalStateException("Cannot retry a job that is still running or queued");
         }
 
-        JobRequest request = new JobRequest();
-        request.setRequestedBy(original.getRequestedBy());
-        request.setArguments(original.getArguments());
-        request.setParameters(stringToParams(original.getParameters()));
+        JobRequest request = new JobRequest(
+                stringToParams(original.getParameters()),
+                original.getArguments(),
+                original.getRequestedBy()
+        );
 
         return launch(original.getJobName(), request);
     }
@@ -157,15 +154,15 @@ public class JobLauncher {
         Future<?> future = executorService.submit(() -> executeJob(executionId, def, context));
         runningFutures.put(executionId, future);
 
-        if (def.getTimeoutSeconds() > 0) {
+        if (def.timeoutSeconds() > 0) {
             scheduledExecutorService.schedule(() -> {
                 if (runningContexts.containsKey(executionId)) {
-                    log.warn("Job {} timed out after {}s", executionId, def.getTimeoutSeconds());
+                    log.warn("Job {} timed out after {}s", executionId, def.timeoutSeconds());
                     context.markStopRequested();
                     Future<?> f = runningFutures.get(executionId);
                     if (f != null) f.cancel(true);
                 }
-            }, def.getTimeoutSeconds(), TimeUnit.SECONDS);
+            }, def.timeoutSeconds(), TimeUnit.SECONDS);
         }
     }
 
@@ -177,22 +174,22 @@ public class JobLauncher {
     private void executeJob(Long executionId, JobDefinition def, JobContext context) {
         try {
             updateStatus(executionId, JobStatus.IN_PROGRESS);
-            def.getHandler().execute(context);
+            def.handler().execute(context);
             updateStatus(executionId, JobStatus.SUCCESS);
-            log.info("Job {} completed successfully (executionId={})", def.getName(), executionId);
+            log.info("Job {} completed successfully (executionId={})", def.name(), executionId);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             updateStatus(executionId, JobStatus.STOPPED);
-            log.info("Job {} was stopped (executionId={})", def.getName(), executionId);
+            log.info("Job {} was stopped (executionId={})", def.name(), executionId);
         } catch (Exception e) {
-            log.error("Job {} failed (executionId={}): {}", def.getName(), executionId, e.getMessage(), e);
+            log.error("Job {} failed (executionId={}): {}", def.name(), executionId, e.getMessage(), e);
             updateStatusWithError(executionId, JobStatus.FAILURE, e.getMessage());
         } finally {
             runningContexts.remove(executionId);
             runningFutures.remove(executionId);
-            concurrencyManager.decrement(def.getName());
+            concurrencyManager.decrement(def.name());
             setEndTime(executionId);
-            processQueue(def.getName(), def.getMaxConcurrency());
+            processQueue(def.name(), def.maxConcurrency());
         }
     }
 
@@ -204,14 +201,13 @@ public class JobLauncher {
             }
             JobContext nextContext = runningContexts.get(nextId);
             if (nextContext == null) {
-                // Context was removed (job was stopped before starting), skip and try next
                 log.warn("No context found for queued executionId={}, skipping", nextId);
                 continue;
             }
             JobDefinition def = jobRegistry.get(jobName);
             concurrencyManager.increment(jobName);
             updateStatus(nextId, JobStatus.STARTED);
-            if (def.isAsync()) {
+            if (def.async()) {
                 runJobAsync(nextId, def, nextContext);
             } else {
                 runJobSync(nextId, def, nextContext);
@@ -241,7 +237,7 @@ public class JobLauncher {
 
     private void setEndTime(Long executionId) {
         executionRepository.findById(executionId).ifPresent(exec -> {
-            exec.setEndTime(Timestamp.from(Instant.now()));
+            exec.setEndTime(Instant.now());
             executionRepository.save(exec);
         });
     }

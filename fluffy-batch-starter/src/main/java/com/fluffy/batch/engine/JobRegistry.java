@@ -46,8 +46,8 @@ public class JobRegistry implements ApplicationContextAware, InitializingBean {
                             .requiredParams(annotation.requiredParams())
                             .handler(handler)
                             .build();
-                    if (!registry.containsKey(def.getName())) {
-                        registry.put(def.getName(), def);
+                    if (!registry.containsKey(def.name())) {
+                        registry.put(def.name(), def);
                     }
                 }
             }
@@ -55,10 +55,10 @@ public class JobRegistry implements ApplicationContextAware, InitializingBean {
     }
 
     public void register(JobDefinition definition) {
-        if (registry.containsKey(definition.getName())) {
-            throw new IllegalArgumentException("Job already registered: " + definition.getName());
+        if (registry.containsKey(definition.name())) {
+            throw new IllegalArgumentException("Job already registered: " + definition.name());
         }
-        registry.put(definition.getName(), definition);
+        registry.put(definition.name(), definition);
     }
 
     public JobDefinition get(String name) {
