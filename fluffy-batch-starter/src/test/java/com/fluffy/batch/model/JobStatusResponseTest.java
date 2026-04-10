@@ -1,6 +1,7 @@
 package com.fluffy.batch.model;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
 
 import java.time.Instant;
 
@@ -16,7 +17,7 @@ class JobStatusResponseTest {
         JobExecution execution = new JobExecution();
         execution.setId(1L);
         execution.setJobName("test-job");
-        execution.setStatus(JobStatus.SUCCESS);
+        execution.setStatus(BatchStatus.COMPLETED);
         execution.setRequestedBy("user1");
         execution.setStartTime(start);
         execution.setEndTime(end);
@@ -27,7 +28,7 @@ class JobStatusResponseTest {
 
         assertThat(response.jobId()).isEqualTo(1L);
         assertThat(response.jobName()).isEqualTo("test-job");
-        assertThat(response.status()).isEqualTo("SUCCESS");
+        assertThat(response.status()).isEqualTo("COMPLETED");
         assertThat(response.requestedBy()).isEqualTo("user1");
         assertThat(response.startTime()).isEqualTo(start);
         assertThat(response.endTime()).isEqualTo(end);
@@ -52,7 +53,7 @@ class JobStatusResponseTest {
         JobExecution execution = new JobExecution();
         execution.setId(3L);
         execution.setJobName("test-job");
-        execution.setStatus(JobStatus.FAILURE);
+        execution.setStatus(BatchStatus.FAILED);
         execution.setQueuePosition(5);
         execution.setErrorMessage("Something went wrong");
 

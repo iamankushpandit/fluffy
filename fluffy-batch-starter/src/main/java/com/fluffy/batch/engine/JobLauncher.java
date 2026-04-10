@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluffy.batch.api.JobContext;
 import com.fluffy.batch.api.JobRequest;
 import com.fluffy.batch.model.JobExecution;
-import com.fluffy.batch.model.JobStatus;
 import com.fluffy.batch.persistence.JobExecutionRepository;
 import com.fluffy.batch.persistence.JobQueueManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +75,7 @@ public class JobLauncher {
 
         JobExecution execution = new JobExecution();
         execution.setJobName(jobName);
-        execution.setStatus(JobStatus.IN_QUEUE);
+        execution.setStatus(BatchStatus.STARTING);
         execution.setRequestedBy(requestedBy);
         execution.setStartTime(Instant.now());
         execution.setArguments(request.arguments());
@@ -88,7 +88,7 @@ public class JobLauncher {
 
         if (concurrencyManager.canRun(jobName, def.maxConcurrency())) {
             concurrencyManager.increment(jobName);
-            updateStatus(executionId, JobStatus.STARTED);
+            updateStatus(executionId, BatchStatus.STARTED);
             if (def.async()) {
                 runJobAsync(executionId, def, context);
             } else {
@@ -112,7 +112,7 @@ public class JobLauncher {
             queueManager.remove(executionId);
             JobContext ctx = runningContexts.remove(executionId);
             if (ctx != null) ctx.markStopRequested();
-            updateStatus(executionId, JobStatus.STOPPED);
+            updateStatus(executionId, BatchStatus.STOPPED);
             return true;
         }
 
@@ -134,9 +134,8 @@ public class JobLauncher {
         JobExecution original = executionRepository.findById(executionId)
                 .orElseThrow(() -> new JobNotFoundException("Execution not found: " + executionId));
 
-        JobStatus currentStatus = original.getStatus();
-        if (currentStatus == JobStatus.IN_QUEUE || currentStatus == JobStatus.STARTED
-                || currentStatus == JobStatus.IN_PROGRESS) {
+        BatchStatus currentStatus = original.getStatus();
+        if (currentStatus == BatchStatus.STARTING || currentStatus == BatchStatus.STARTED) {
             throw new IllegalStateException("Cannot retry a job that is still running or queued");
         }
 
@@ -173,17 +172,17 @@ public class JobLauncher {
 
     private void executeJob(Long executionId, JobDefinition def, JobContext context) {
         try {
-            updateStatus(executionId, JobStatus.IN_PROGRESS);
+            updateStatus(executionId, BatchStatus.STARTED);
             def.handler().execute(context);
-            updateStatus(executionId, JobStatus.SUCCESS);
+            updateStatus(executionId, BatchStatus.COMPLETED);
             log.info("Job {} completed successfully (executionId={})", def.name(), executionId);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            updateStatus(executionId, JobStatus.STOPPED);
+            updateStatus(executionId, BatchStatus.STOPPED);
             log.info("Job {} was stopped (executionId={})", def.name(), executionId);
         } catch (Exception e) {
             log.error("Job {} failed (executionId={}): {}", def.name(), executionId, e.getMessage(), e);
-            updateStatusWithError(executionId, JobStatus.FAILURE, e.getMessage());
+            updateStatusWithError(executionId, BatchStatus.FAILED, e.getMessage());
         } finally {
             runningContexts.remove(executionId);
             runningFutures.remove(executionId);
@@ -206,7 +205,7 @@ public class JobLauncher {
             }
             JobDefinition def = jobRegistry.get(jobName);
             concurrencyManager.increment(jobName);
-            updateStatus(nextId, JobStatus.STARTED);
+            updateStatus(nextId, BatchStatus.STARTED);
             if (def.async()) {
                 runJobAsync(nextId, def, nextContext);
             } else {
@@ -216,17 +215,17 @@ public class JobLauncher {
         }
     }
 
-    private void updateStatus(Long executionId, JobStatus status) {
+    private void updateStatus(Long executionId, BatchStatus status) {
         executionRepository.findById(executionId).ifPresent(exec -> {
             exec.setStatus(status);
-            if (status == JobStatus.STARTED || status == JobStatus.IN_PROGRESS) {
+            if (status == BatchStatus.STARTED) {
                 exec.setQueuePosition(null);
             }
             executionRepository.save(exec);
         });
     }
 
-    private void updateStatusWithError(Long executionId, JobStatus status, String errorMessage) {
+    private void updateStatusWithError(Long executionId, BatchStatus status, String errorMessage) {
         executionRepository.findById(executionId).ifPresent(exec -> {
             exec.setStatus(status);
             exec.setErrorMessage(errorMessage != null && errorMessage.length() > 4096

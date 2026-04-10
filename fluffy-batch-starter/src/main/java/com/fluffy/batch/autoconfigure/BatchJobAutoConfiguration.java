@@ -7,6 +7,7 @@ import com.fluffy.batch.persistence.JobQueueManager;
 import com.fluffy.batch.web.GlobalExceptionHandler;
 import com.fluffy.batch.web.JobController;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -18,7 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-@AutoConfiguration
+@AutoConfiguration(before = BatchAutoConfiguration.class)
 @ConditionalOnClass(JobRegistry.class)
 @EnableJpaRepositories(basePackages = "com.fluffy.batch.persistence")
 @EntityScan(basePackages = "com.fluffy.batch.model")

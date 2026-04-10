@@ -2,10 +2,10 @@ package com.fluffy.batch.engine;
 
 import com.fluffy.batch.api.JobRequest;
 import com.fluffy.batch.model.JobExecution;
-import com.fluffy.batch.model.JobStatus;
 import com.fluffy.batch.persistence.JobExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -81,7 +81,7 @@ class JobLauncherEdgeCaseTest {
         Long id = jobLauncher.launch("noop-sync", null);
         assertThat(id).isNotNull();
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(exec.getStatus()).isEqualTo(BatchStatus.COMPLETED);
         assertThat(exec.getRequestedBy()).isEqualTo("anonymous");
     }
 
@@ -90,7 +90,7 @@ class JobLauncherEdgeCaseTest {
         Long id = jobLauncher.launch("failing-edge-job", new JobRequest());
 
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isEqualTo(JobStatus.FAILURE);
+        assertThat(exec.getStatus()).isEqualTo(BatchStatus.FAILED);
         assertThat(exec.getErrorMessage()).isEqualTo("boom");
         assertThat(exec.getEndTime()).isNotNull();
     }
@@ -123,7 +123,7 @@ class JobLauncherEdgeCaseTest {
         Long id2 = jobLauncher.launch("concurrent-limit-job", new JobRequest());
 
         JobExecution exec2 = executionRepository.findById(id2).orElseThrow();
-        assertThat(exec2.getStatus()).isIn(JobStatus.IN_QUEUE, JobStatus.STARTED, JobStatus.IN_PROGRESS);
+        assertThat(exec2.getStatus()).isIn(BatchStatus.STARTING, BatchStatus.STARTED);
 
         // Wait for both to complete
         Thread.sleep(5000);
@@ -156,7 +156,7 @@ class JobLauncherEdgeCaseTest {
         Long id = jobLauncher.launch("multi-param-job", req);
 
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(exec.getStatus()).isEqualTo(BatchStatus.COMPLETED);
     }
 
     @Test
@@ -184,7 +184,7 @@ class JobLauncherEdgeCaseTest {
         assertThat(stopped).isTrue();
 
         JobExecution exec2 = executionRepository.findById(id2).orElseThrow();
-        assertThat(exec2.getStatus()).isEqualTo(JobStatus.STOPPED);
+        assertThat(exec2.getStatus()).isEqualTo(BatchStatus.STOPPED);
 
         // Clean up first job
         jobLauncher.stop(id1);
@@ -198,7 +198,7 @@ class JobLauncherEdgeCaseTest {
         Thread.sleep(3000);
 
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isIn(JobStatus.STOPPED, JobStatus.FAILURE);
+        assertThat(exec.getStatus()).isIn(BatchStatus.STOPPED, BatchStatus.FAILED);
         assertThat(exec.getEndTime()).isNotNull();
     }
 
@@ -233,7 +233,7 @@ class JobLauncherEdgeCaseTest {
 
         Long id = jobLauncher.launch(longErrorJob, new JobRequest());
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isEqualTo(JobStatus.FAILURE);
+        assertThat(exec.getStatus()).isEqualTo(BatchStatus.FAILED);
         assertThat(exec.getErrorMessage()).hasSize(4096);
     }
 
@@ -242,7 +242,7 @@ class JobLauncherEdgeCaseTest {
         // Launch a job, then corrupt its stored parameters, then retry
         Long id = jobLauncher.launch("noop-sync", new JobRequest());
         JobExecution exec = executionRepository.findById(id).orElseThrow();
-        assertThat(exec.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(exec.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
         // Corrupt the stored parameters with invalid JSON
         exec.setParameters("not-valid-json{{{");

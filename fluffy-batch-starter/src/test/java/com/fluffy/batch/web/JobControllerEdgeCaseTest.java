@@ -126,7 +126,7 @@ class JobControllerEdgeCaseTest {
 
         mockMvc.perform(get("/api/jobs/" + jobId + "/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FAILURE"))
+                .andExpect(jsonPath("$.status").value("FAILED"))
                 .andExpect(jsonPath("$.errorMessage").value("simulated failure"));
     }
 

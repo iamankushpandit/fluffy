@@ -1,6 +1,7 @@
 package com.fluffy.batch.model;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
 
 import java.time.Instant;
 
@@ -16,7 +17,7 @@ class JobExecutionTest {
 
         execution.setId(1L);
         execution.setJobName("test-job");
-        execution.setStatus(JobStatus.IN_PROGRESS);
+        execution.setStatus(BatchStatus.STARTED);
         execution.setRequestedBy("user1");
         execution.setStartTime(start);
         execution.setEndTime(end);
@@ -27,7 +28,7 @@ class JobExecutionTest {
 
         assertThat(execution.getId()).isEqualTo(1L);
         assertThat(execution.getJobName()).isEqualTo("test-job");
-        assertThat(execution.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.STARTED);
         assertThat(execution.getRequestedBy()).isEqualTo("user1");
         assertThat(execution.getStartTime()).isEqualTo(start);
         assertThat(execution.getEndTime()).isEqualTo(end);

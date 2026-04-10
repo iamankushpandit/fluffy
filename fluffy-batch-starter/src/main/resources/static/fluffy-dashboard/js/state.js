@@ -48,7 +48,7 @@ const FluffyState = (() => {
     },
 
     statusCounts() {
-      const counts = { ALL: _executions.length, IN_QUEUE: 0, STARTED: 0, IN_PROGRESS: 0, SUCCESS: 0, FAILURE: 0, STOPPED: 0 };
+      const counts = { ALL: _executions.length, STARTING: 0, STARTED: 0, COMPLETED: 0, FAILED: 0, STOPPED: 0 };
       _executions.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++; });
       return counts;
     }

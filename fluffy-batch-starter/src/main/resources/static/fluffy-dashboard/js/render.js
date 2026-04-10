@@ -4,7 +4,7 @@
 const FluffyRender = (() => {
   'use strict';
 
-  const STATUS_ORDER = ['ALL', 'IN_QUEUE', 'STARTED', 'IN_PROGRESS', 'SUCCESS', 'FAILURE', 'STOPPED'];
+  const STATUS_ORDER = ['ALL', 'STARTING', 'STARTED', 'COMPLETED', 'FAILED', 'STOPPED'];
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -42,9 +42,9 @@ const FluffyRender = (() => {
     container.innerHTML =
       '<div class="summary-card"><div class="count">' + FluffyState.jobs.length + '</div><div class="label">Registered Jobs</div></div>' +
       '<div class="summary-card"><div class="count">' + counts.ALL + '</div><div class="label">Total Executions</div></div>' +
-      '<div class="summary-card"><div class="count">' + (counts.IN_QUEUE + counts.STARTED + counts.IN_PROGRESS) + '</div><div class="label">Active</div></div>' +
-      '<div class="summary-card"><div class="count">' + counts.SUCCESS + '</div><div class="label">Success</div></div>' +
-      '<div class="summary-card"><div class="count">' + counts.FAILURE + '</div><div class="label">Failure</div></div>' +
+      '<div class="summary-card"><div class="count">' + (counts.STARTING + counts.STARTED) + '</div><div class="label">Active</div></div>' +
+      '<div class="summary-card"><div class="count">' + counts.COMPLETED + '</div><div class="label">Completed</div></div>' +
+      '<div class="summary-card"><div class="count">' + counts.FAILED + '</div><div class="label">Failed</div></div>' +
       '<div class="summary-card"><div class="count">' + counts.STOPPED + '</div><div class="label">Stopped</div></div>';
   }
 
@@ -90,8 +90,8 @@ const FluffyRender = (() => {
       return;
     }
     tbody.innerHTML = list.map(e => {
-      const canStop = ['IN_QUEUE', 'STARTED', 'IN_PROGRESS'].includes(e.status);
-      const canRetry = ['SUCCESS', 'FAILURE', 'STOPPED'].includes(e.status);
+      const canStop = ['STARTING', 'STARTED'].includes(e.status);
+      const canRetry = ['COMPLETED', 'FAILED', 'STOPPED'].includes(e.status);
       return '<tr>' +
         '<td class="mono">' + escapeHtml(String(e.jobId)) + '</td>' +
         '<td>' + escapeHtml(e.jobName) + '</td>' +

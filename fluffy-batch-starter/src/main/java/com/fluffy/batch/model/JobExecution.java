@@ -1,6 +1,8 @@
 package com.fluffy.batch.model;
 
 import jakarta.persistence.*;
+import org.springframework.batch.core.BatchStatus;
+
 import java.time.Instant;
 
 @Entity
@@ -14,7 +16,7 @@ public class JobExecution {
     private String jobName;
 
     @Enumerated(EnumType.STRING)
-    private JobStatus status;
+    private BatchStatus status;
 
     private String requestedBy;
 
@@ -41,8 +43,8 @@ public class JobExecution {
     public String getJobName() { return jobName; }
     public void setJobName(String jobName) { this.jobName = jobName; }
 
-    public JobStatus getStatus() { return status; }
-    public void setStatus(JobStatus status) { this.status = status; }
+    public BatchStatus getStatus() { return status; }
+    public void setStatus(BatchStatus status) { this.status = status; }
 
     public String getRequestedBy() { return requestedBy; }
     public void setRequestedBy(String requestedBy) { this.requestedBy = requestedBy; }
