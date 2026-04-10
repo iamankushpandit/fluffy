@@ -8,7 +8,7 @@ const FluffyRender = (() => {
 
   function escapeHtml(str) {
     if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function formatTime(ts) {
@@ -64,7 +64,7 @@ const FluffyRender = (() => {
         '<td>' + escapeHtml(String(j.maxConcurrency)) + '</td>' +
         '<td class="mono">' + escapeHtml((j.requiredParams || []).join(', ') || '—') + '</td>' +
         '<td class="actions">' +
-          '<button class="btn btn-primary btn-sm" data-action="start-job" data-job="' + escapeHtml(j.name) + '" data-params=\'' + escapeHtml(JSON.stringify(j.requiredParams || [])) + '\'>Start</button>' +
+          '<button class="btn btn-primary btn-sm" data-action="start-job" data-job="' + escapeHtml(j.name) + '" data-params="' + escapeHtml(JSON.stringify(j.requiredParams || [])) + '">Start</button>' +
         '</td>' +
       '</tr>'
     ).join('');
