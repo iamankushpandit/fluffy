@@ -1,5 +1,0 @@
-com/fluffy/batch/engine/JobLauncherTest.class
-com/fluffy/batch/engine/ConcurrencyManagerTest.class
-com/fluffy/batch/engine/JobRegistryTest.class
-com/fluffy/batch/web/JobControllerIntegrationTest.class
-com/fluffy/batch/TestBatchApplication.class
