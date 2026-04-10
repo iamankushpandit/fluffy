@@ -1,7 +1,7 @@
 package com.fluffy.batch.model;
 
 import jakarta.persistence.*;
-import java.sql.Timestamp;
+import java.time.Instant;
 
 @Entity
 @Table(name = "job_execution")
@@ -18,9 +18,9 @@ public class JobExecution {
 
     private String requestedBy;
 
-    private Timestamp startTime;
+    private Instant startTime;
 
-    private Timestamp endTime;
+    private Instant endTime;
 
     @Column(length = 4096)
     private String parameters;
@@ -47,11 +47,11 @@ public class JobExecution {
     public String getRequestedBy() { return requestedBy; }
     public void setRequestedBy(String requestedBy) { this.requestedBy = requestedBy; }
 
-    public Timestamp getStartTime() { return startTime; }
-    public void setStartTime(Timestamp startTime) { this.startTime = startTime; }
+    public Instant getStartTime() { return startTime; }
+    public void setStartTime(Instant startTime) { this.startTime = startTime; }
 
-    public Timestamp getEndTime() { return endTime; }
-    public void setEndTime(Timestamp endTime) { this.endTime = endTime; }
+    public Instant getEndTime() { return endTime; }
+    public void setEndTime(Instant endTime) { this.endTime = endTime; }
 
     public String getParameters() { return parameters; }
     public void setParameters(String parameters) { this.parameters = parameters; }

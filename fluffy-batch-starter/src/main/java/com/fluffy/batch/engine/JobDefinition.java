@@ -2,36 +2,35 @@ package com.fluffy.batch.engine;
 
 import com.fluffy.batch.api.JobHandler;
 
-public class JobDefinition {
-    private final String name;
-    private final String description;
-    private final int maxConcurrency;
-    private final boolean async;
-    private final long timeoutSeconds;
-    private final String[] requiredParams;
-    private final JobHandler handler;
-
-    private JobDefinition(Builder builder) {
-        this.name = builder.name;
-        this.description = builder.description;
-        this.maxConcurrency = builder.maxConcurrency;
-        this.async = builder.async;
-        this.timeoutSeconds = builder.timeoutSeconds;
-        this.requiredParams = builder.requiredParams;
-        this.handler = builder.handler;
+/**
+ * Immutable definition of a batch job: its name, concurrency limits, timeout,
+ * required parameters, and the handler that executes the work.
+ */
+public record JobDefinition(
+        String name,
+        String description,
+        int maxConcurrency,
+        boolean async,
+        long timeoutSeconds,
+        String[] requiredParams,
+        JobHandler handler
+) {
+    /** Validates invariants. */
+    public JobDefinition {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Job name must not be blank");
+        }
+        if (handler == null) {
+            throw new IllegalArgumentException("Job handler must not be null");
+        }
+        if (requiredParams == null) {
+            requiredParams = new String[0];
+        }
     }
 
     public static Builder builder(String name) {
         return new Builder(name);
     }
-
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public int getMaxConcurrency() { return maxConcurrency; }
-    public boolean isAsync() { return async; }
-    public long getTimeoutSeconds() { return timeoutSeconds; }
-    public String[] getRequiredParams() { return requiredParams; }
-    public JobHandler getHandler() { return handler; }
 
     public static class Builder {
         private final String name;
@@ -77,13 +76,8 @@ public class JobDefinition {
         }
 
         public JobDefinition build() {
-            if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException("Job name must not be blank");
-            }
-            if (handler == null) {
-                throw new IllegalArgumentException("Job handler must not be null");
-            }
-            return new JobDefinition(this);
+            return new JobDefinition(name, description, maxConcurrency, async,
+                    timeoutSeconds, requiredParams, handler);
         }
     }
 }

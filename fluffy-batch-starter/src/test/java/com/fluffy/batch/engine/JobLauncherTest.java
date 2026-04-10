@@ -77,8 +77,7 @@ class JobLauncherTest {
 
     @Test
     void shouldLaunchSyncJob() {
-        JobRequest request = new JobRequest();
-        request.setRequestedBy("test-user");
+        JobRequest request = new JobRequest(null, null, "test-user");
 
         Long executionId = jobLauncher.launch("sync-test-job", request);
 
@@ -90,8 +89,7 @@ class JobLauncherTest {
 
     @Test
     void shouldLaunchAsyncJob() throws InterruptedException {
-        JobRequest request = new JobRequest();
-        request.setRequestedBy("test-user");
+        JobRequest request = new JobRequest(null, null, "test-user");
 
         Long executionId = jobLauncher.launch("async-test-job", request);
         assertThat(executionId).isNotNull();
@@ -112,8 +110,7 @@ class JobLauncherTest {
 
     @Test
     void shouldSucceedWithRequiredParam() {
-        JobRequest request = new JobRequest();
-        request.setParameters(Map.of("key1", "value1"));
+        JobRequest request = new JobRequest(Map.of("key1", "value1"), null, null);
 
         Long executionId = jobLauncher.launch("param-test-job", request);
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();

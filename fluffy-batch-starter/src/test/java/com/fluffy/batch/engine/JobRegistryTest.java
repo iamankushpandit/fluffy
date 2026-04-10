@@ -30,15 +30,15 @@ class JobRegistryTest {
     @Test
     void shouldRegisterJob() {
         jobRegistry.register(testDef);
-        assertThat(jobRegistry.exists(testDef.getName())).isTrue();
+        assertThat(jobRegistry.exists(testDef.name())).isTrue();
     }
 
     @Test
     void shouldRetrieveRegisteredJob() {
         jobRegistry.register(testDef);
-        JobDefinition retrieved = jobRegistry.get(testDef.getName());
-        assertThat(retrieved.getName()).isEqualTo(testDef.getName());
-        assertThat(retrieved.getDescription()).isEqualTo("Test job");
+        JobDefinition retrieved = jobRegistry.get(testDef.name());
+        assertThat(retrieved.name()).isEqualTo(testDef.name());
+        assertThat(retrieved.description()).isEqualTo("Test job");
     }
 
     @Test
@@ -65,6 +65,6 @@ class JobRegistryTest {
     void shouldListAllJobs() {
         jobRegistry.register(testDef);
         assertThat(jobRegistry.getAll()).isNotNull();
-        assertThat(jobRegistry.getAll()).anyMatch(d -> d.getName().equals(testDef.getName()));
+        assertThat(jobRegistry.getAll()).anyMatch(d -> d.name().equals(testDef.name()));
     }
 }
