@@ -35,6 +35,8 @@ public class JobExecution {
     @Column(length = 4096)
     private String errorMessage;
 
+    private String ownerNode;
+
     public JobExecution() {}
 
     public Long getId() { return id; }
@@ -66,4 +68,7 @@ public class JobExecution {
 
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+
+    public String getOwnerNode() { return ownerNode; }
+    public void setOwnerNode(String ownerNode) { this.ownerNode = ownerNode; }
 }
