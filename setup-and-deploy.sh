@@ -172,7 +172,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Verify the example jar was produced
-example_jar=$(find fluffy-batch-starter/fluffy-batch-example/target -name "fluffy-batch-example-*.jar" -not -name "*-sources.jar" 2>/dev/null | head -1)
+example_jar=$(find fluffy-batch-starter/fluffy-batch-example/target -name "fluffy-batch-example-*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" 2>/dev/null | head -1)
 if [ -z "$example_jar" ]; then
     write_fail "Example JAR not found after build."
     exit 1
