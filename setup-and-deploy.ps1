@@ -243,7 +243,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-OK "PostgreSQL is ready"
 
-# Deploy the example app
+# Deploy the example app (original postgres-backed instance)
 Write-Host "  Deploying Fluffy Batch Example..."
 & kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n fluffy
 if ($LASTEXITCODE -ne 0) {
@@ -260,6 +260,83 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-OK "Application is ready"
 
+# Deploy Kafka
+Write-Host "  Deploying Kafka..."
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n fluffy
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] Kafka manifest apply failed." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Waiting for Kafka to be ready..."
+& kubectl rollout status deployment/kafka -n fluffy --timeout=180s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] Kafka deployment did not become ready." -ForegroundColor Red
+    Write-Host "  Check: kubectl describe pods -l app=kafka -n fluffy" -ForegroundColor Yellow
+    exit 1
+}
+Write-OK "Kafka is ready"
+
+# Deploy H2-backed instance
+Write-Host "  Deploying Fluffy Batch H2 instance..."
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n fluffy
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] H2 instance manifest apply failed." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Waiting for H2 instance to be ready..."
+& kubectl rollout status deployment/fluffy-batch-h2 -n fluffy --timeout=180s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] H2 instance did not become ready." -ForegroundColor Red
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-h2 -n fluffy" -ForegroundColor Yellow
+    exit 1
+}
+Write-OK "H2 instance is ready"
+
+# Deploy database-backed instance
+Write-Host "  Deploying Fluffy Batch DB instance..."
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n fluffy
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] DB instance manifest apply failed." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Waiting for DB instance to be ready..."
+& kubectl rollout status deployment/fluffy-batch-db -n fluffy --timeout=180s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] DB instance did not become ready." -ForegroundColor Red
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-db -n fluffy" -ForegroundColor Yellow
+    exit 1
+}
+Write-OK "DB instance is ready"
+
+# Deploy Kafka-backed instance
+Write-Host "  Deploying Fluffy Batch Kafka instance..."
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n fluffy
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] Kafka instance manifest apply failed." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Waiting for Kafka instance to be ready..."
+& kubectl rollout status deployment/fluffy-batch-kafka -n fluffy --timeout=180s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] Kafka instance did not become ready." -ForegroundColor Red
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-kafka -n fluffy" -ForegroundColor Yellow
+    exit 1
+}
+Write-OK "Kafka instance is ready"
+
+# Optionally apply HorizontalPodAutoscaler
+Write-Host "  Applying HorizontalPodAutoscaler for DB instance..."
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n fluffy
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [WARN] HPA apply failed (metrics-server may not be available). Skipping." -ForegroundColor Yellow
+} else {
+    Write-OK "HPA applied (fluffy-batch-db: 1-5 replicas, 70% CPU target)"
+}
+
 # ---------------------------------------------------------------------------
 # 7. Print access information
 # ---------------------------------------------------------------------------
@@ -267,19 +344,38 @@ Write-OK "Application is ready"
 Write-Step "Deployment complete!"
 
 $serviceUrl = & minikube service fluffy-batch-example -n fluffy --url 2>&1 | Select-Object -First 1
+$minikubeIp = & minikube ip 2>&1
 
 Write-Host ""
 Write-Host "  Fluffy Batch Example is running!" -ForegroundColor Green
 Write-Host ""
+Write-Host "  --- Original instance (postgres profile) ---" -ForegroundColor White
 Write-Host "  Dashboard       : $serviceUrl/fluffy-dashboard/index.html" -ForegroundColor White
 Write-Host "  Application URL : $serviceUrl" -ForegroundColor White
 Write-Host "  API Base        : $serviceUrl/api/jobs" -ForegroundColor White
 Write-Host "  Registered Jobs : $serviceUrl/api/jobs/registered" -ForegroundColor White
 Write-Host ""
+Write-Host "  --- H2 instance (in-memory, no external DB) ---" -ForegroundColor White
+Write-Host "  Application URL : http://${minikubeIp}:30081" -ForegroundColor White
+Write-Host "  H2 Console      : http://${minikubeIp}:30081/h2-console" -ForegroundColor White
+Write-Host "  API Base        : http://${minikubeIp}:30081/api/jobs" -ForegroundColor White
+Write-Host ""
+Write-Host "  --- Database instance (database profile) ---" -ForegroundColor White
+Write-Host "  Application URL : http://${minikubeIp}:30082" -ForegroundColor White
+Write-Host "  API Base        : http://${minikubeIp}:30082/api/jobs" -ForegroundColor White
+Write-Host ""
+Write-Host "  --- Kafka instance (kafka profile) ---" -ForegroundColor White
+Write-Host "  Application URL : http://${minikubeIp}:30083" -ForegroundColor White
+Write-Host "  API Base        : http://${minikubeIp}:30083/api/jobs" -ForegroundColor White
+Write-Host ""
 Write-Host "  Useful commands:" -ForegroundColor Yellow
 Write-Host "    kubectl get pods -n fluffy                                # Check pod status"
-Write-Host "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View app logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View original app logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-h2 -n fluffy             # View H2 instance logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-db -n fluffy             # View DB instance logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-kafka -n fluffy          # View Kafka instance logs"
 Write-Host "    kubectl logs -l app=postgres -n fluffy                    # View PostgreSQL logs"
+Write-Host "    kubectl logs -l app=kafka -n fluffy                       # View Kafka logs"
 Write-Host "    minikube dashboard                                        # Open K8s dashboard"
 Write-Host ""
 Write-Host "  To tear down:" -ForegroundColor Yellow

@@ -1,0 +1,24 @@
+# HorizontalPodAutoscaler for the database-backed instance.
+# For custom metrics-based scaling (e.g. queue depth), consider using KEDA
+# (https://keda.sh) which supports ScaledObject resources driven by external
+# metrics such as Kafka consumer lag or database row counts.
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fluffy-batch-db-hpa
+  namespace: fluffy
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fluffy-batch-db
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
