@@ -26,14 +26,14 @@ import java.util.concurrent.ScheduledExecutorService;
          JobQueueManager.class, JobController.class, GlobalExceptionHandler.class})
 public class BatchJobAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
+    @Bean(name = "jobExecutorService")
+    @ConditionalOnMissingBean(name = "jobExecutorService")
     public ExecutorService jobExecutorService() {
         return Executors.newCachedThreadPool();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
+    @Bean(name = "jobScheduledExecutorService")
+    @ConditionalOnMissingBean(name = "jobScheduledExecutorService")
     public ScheduledExecutorService jobScheduledExecutorService() {
         return Executors.newScheduledThreadPool(4);
     }
