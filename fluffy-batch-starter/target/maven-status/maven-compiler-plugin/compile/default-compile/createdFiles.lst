@@ -13,6 +13,7 @@ com/fluffy/batch/engine/JobRegistry.class
 com/fluffy/batch/annotation/BatchJob.class
 com/fluffy/batch/api/JobRequest.class
 META-INF/spring-autoconfigure-metadata.properties
+com/fluffy/batch/engine/JobLauncher$1.class
 com/fluffy/batch/engine/JobLauncher.class
 com/fluffy/batch/persistence/JobQueueManager.class
 com/fluffy/batch/model/JobStatusResponse.class

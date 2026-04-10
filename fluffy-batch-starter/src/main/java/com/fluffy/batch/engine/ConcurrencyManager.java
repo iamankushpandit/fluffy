@@ -26,8 +26,8 @@ public class ConcurrencyManager {
         AtomicInteger counter = jobCounters.get(jobName);
         if (counter != null) {
             counter.decrementAndGet();
+            globalCounter.decrementAndGet();
         }
-        globalCounter.decrementAndGet();
     }
 
     public int getRunningCount(String jobName) {

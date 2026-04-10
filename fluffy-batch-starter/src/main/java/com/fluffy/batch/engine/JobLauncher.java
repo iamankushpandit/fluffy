@@ -1,5 +1,7 @@
 package com.fluffy.batch.engine;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluffy.batch.api.JobContext;
 import com.fluffy.batch.api.JobRequest;
 import com.fluffy.batch.model.JobExecution;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +36,7 @@ public class JobLauncher {
     private final JobQueueManager queueManager;
     private final ExecutorService executorService;
     private final ScheduledExecutorService scheduledExecutorService;
+    private final ObjectMapper objectMapper;
 
     private final Map<Long, JobContext> runningContexts = new ConcurrentHashMap<>();
     private final Map<Long, Future<?>> runningFutures = new ConcurrentHashMap<>();
@@ -42,13 +46,15 @@ public class JobLauncher {
                        JobExecutionRepository executionRepository,
                        JobQueueManager queueManager,
                        @Qualifier("jobExecutorService") ExecutorService executorService,
-                       @Qualifier("jobScheduledExecutorService") ScheduledExecutorService scheduledExecutorService) {
+                       @Qualifier("jobScheduledExecutorService") ScheduledExecutorService scheduledExecutorService,
+                       ObjectMapper objectMapper) {
         this.jobRegistry = jobRegistry;
         this.concurrencyManager = concurrencyManager;
         this.executionRepository = executionRepository;
         this.queueManager = queueManager;
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -191,23 +197,26 @@ public class JobLauncher {
     }
 
     private void processQueue(String jobName, int maxConcurrency) {
-        if (concurrencyManager.canRun(jobName, maxConcurrency)) {
+        while (concurrencyManager.canRun(jobName, maxConcurrency)) {
             Long nextId = queueManager.poll();
-            if (nextId != null) {
-                JobContext nextContext = runningContexts.get(nextId);
-                if (nextContext == null) {
-                    processQueue(jobName, maxConcurrency);
-                    return;
-                }
-                JobDefinition def = jobRegistry.get(jobName);
-                concurrencyManager.increment(jobName);
-                updateStatus(nextId, JobStatus.STARTED);
-                if (def.isAsync()) {
-                    runJobAsync(nextId, def, nextContext);
-                } else {
-                    runJobSync(nextId, def, nextContext);
-                }
+            if (nextId == null) {
+                break;
             }
+            JobContext nextContext = runningContexts.get(nextId);
+            if (nextContext == null) {
+                // Context was removed (job was stopped before starting), skip and try next
+                log.warn("No context found for queued executionId={}, skipping", nextId);
+                continue;
+            }
+            JobDefinition def = jobRegistry.get(jobName);
+            concurrencyManager.increment(jobName);
+            updateStatus(nextId, JobStatus.STARTED);
+            if (def.isAsync()) {
+                runJobAsync(nextId, def, nextContext);
+            } else {
+                runJobSync(nextId, def, nextContext);
+            }
+            break;
         }
     }
 
@@ -224,8 +233,8 @@ public class JobLauncher {
     private void updateStatusWithError(Long executionId, JobStatus status, String errorMessage) {
         executionRepository.findById(executionId).ifPresent(exec -> {
             exec.setStatus(status);
-            exec.setErrorMessage(errorMessage != null && errorMessage.length() > 4000
-                    ? errorMessage.substring(0, 4000) : errorMessage);
+            exec.setErrorMessage(errorMessage != null && errorMessage.length() > 4096
+                    ? errorMessage.substring(0, 4096) : errorMessage);
             executionRepository.save(exec);
         });
     }
@@ -239,28 +248,21 @@ public class JobLauncher {
 
     private String paramsToString(Map<String, String> params) {
         if (params == null || params.isEmpty()) return null;
-        StringBuilder sb = new StringBuilder("{");
-        params.forEach((k, v) -> sb.append("\"").append(k).append("\":\"").append(v).append("\","));
-        if (sb.charAt(sb.length() - 1) == ',') sb.deleteCharAt(sb.length() - 1);
-        sb.append("}");
-        return sb.toString();
+        try {
+            return objectMapper.writeValueAsString(params);
+        } catch (Exception e) {
+            log.warn("Failed to serialize parameters", e);
+            return null;
+        }
     }
 
     private Map<String, String> stringToParams(String paramsStr) {
-        Map<String, String> params = new HashMap<>();
-        if (paramsStr == null || paramsStr.isBlank()) return params;
-        String content = paramsStr.trim();
-        if (content.startsWith("{")) content = content.substring(1);
-        if (content.endsWith("}")) content = content.substring(0, content.length() - 1);
-        String[] pairs = content.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-        for (String pair : pairs) {
-            String[] kv = pair.split(":", 2);
-            if (kv.length == 2) {
-                String key = kv[0].trim().replaceAll("^\"|\"$", "");
-                String value = kv[1].trim().replaceAll("^\"|\"$", "");
-                params.put(key, value);
-            }
+        if (paramsStr == null || paramsStr.isBlank()) return new HashMap<>();
+        try {
+            return objectMapper.readValue(paramsStr, new TypeReference<Map<String, String>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to deserialize parameters: {}", paramsStr, e);
+            return new HashMap<>();
         }
-        return params;
     }
 }
