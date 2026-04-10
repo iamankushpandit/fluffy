@@ -1,2 +1,3 @@
+com.fluffy.batch.autoconfigure.DatabaseBackendAutoConfiguration
 com.fluffy.batch.autoconfigure.BatchJobAutoConfiguration
 com.fluffy.batch.dashboard.DashboardAutoConfiguration
