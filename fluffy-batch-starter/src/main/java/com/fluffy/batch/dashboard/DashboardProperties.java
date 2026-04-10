@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "fluffy.batch.dashboard")
 public class DashboardProperties {
 
-    private boolean enabled = true;
+    private boolean enabled = false;
     private String path = "/fluffy-dashboard";
     private String title = "Fluffy Batch Dashboard";
     private int refreshInterval = 5;

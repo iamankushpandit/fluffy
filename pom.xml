@@ -12,7 +12,7 @@
 
     <modules>
         <module>fluffy-batch-starter</module>
-        <module>fluffy-batch-example</module>
+        <module>fluffy-batch-starter/fluffy-batch-example</module>
     </modules>
 
     <properties>

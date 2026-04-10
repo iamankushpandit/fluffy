@@ -1,6 +1,6 @@
 # Fluffy Batch Example
 
-A demo application showcasing [Fluffy Batch Starter](../README.md) — a lightweight Spring Boot starter for batch job processing with virtual threads, concurrency control, and a built-in dashboard.
+A demo application showcasing [Fluffy Batch Starter](../../README.md) — a lightweight Spring Boot starter for batch job processing with virtual threads, concurrency control, and a built-in dashboard.
 
 ## What's Included
 
@@ -26,21 +26,24 @@ A demo application showcasing [Fluffy Batch Starter](../README.md) — a lightwe
 mvn clean package -DskipTests
 
 # Run the example app
-java -jar target/fluffy-batch-example-1.0.0-SNAPSHOT.jar
+java -jar fluffy-batch-starter/fluffy-batch-example/target/fluffy-batch-example-1.0.0-SNAPSHOT.jar
 ```
 
 The app starts on **http://localhost:8080** with an H2 in-memory database.
 
-- **Dashboard**: http://localhost:8080/fluffy-dashboard/index.html
+- **Dashboard**: http://localhost:8080/fluffy-dashboard/index.html  *(enabled by default in the example)*
 - **H2 Console**: http://localhost:8080/h2-console (JDBC URL: `jdbc:h2:mem:fluffydb`)
 - **API Base**: http://localhost:8080/api/jobs
+
+> **Note:** The dashboard is disabled by default in the starter library.
+> The example enables it via `fluffy.batch.dashboard.enabled=true` in `application.yml`.
 
 ## Running with PostgreSQL
 
 The example ships with a `postgres` Spring profile that switches the data source to PostgreSQL.
 
 ```bash
-java -jar target/fluffy-batch-example-1.0.0-SNAPSHOT.jar \
+java -jar fluffy-batch-starter/fluffy-batch-example/target/fluffy-batch-example-1.0.0-SNAPSHOT.jar \
      --spring.profiles.active=postgres
 ```
 
@@ -87,7 +90,7 @@ curl http://localhost:8080/api/jobs/registered
 ## Docker
 
 ```bash
-# Build the image
+# Build the image (from this directory)
 docker build -t fluffy-batch-example:latest .
 
 # Run with H2
@@ -110,11 +113,13 @@ A full setup script is provided for Windows developers. It installs prerequisite
 ```
 
 The script will:
-1. Verify / install Minikube, kubectl, and Docker
-2. Build the parent Maven project
-3. Build the example Docker image inside Minikube's Docker daemon
-4. Deploy PostgreSQL and the example app to the `fluffy` namespace
-5. Print the URL to access the application
+1. Verify / install Minikube, kubectl, and Docker (skips if already installed)
+2. Tear down any existing Fluffy deployment
+3. Build the parent Maven project
+4. Build the example Docker image inside Minikube's Docker daemon
+5. Deploy PostgreSQL and the example app to the `fluffy` namespace
+6. Verify each step before proceeding
+7. Print the dashboard URL and other access details
 
 ### Manual Kubernetes Deployment
 
@@ -123,10 +128,10 @@ The script will:
 kubectl create namespace fluffy
 
 # Deploy PostgreSQL
-kubectl apply -f k8s/postgres.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/postgres.yaml -n fluffy
 
 # Deploy the example app
-kubectl apply -f k8s/app.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n fluffy
 
 # Access the app
 minikube service fluffy-batch-example -n fluffy
@@ -144,32 +149,36 @@ Tests use an H2 in-memory database and require no external services.
 ## Project Structure
 
 ```
-fluffy-batch-example/
-├── src/
-│   ├── main/
-│   │   ├── java/com/fluffy/example/
-│   │   │   ├── ExampleApplication.java       # Spring Boot entry point
-│   │   │   └── jobs/
-│   │   │       ├── DataSyncJob.java           # Sync job example
-│   │   │       ├── ReportGenerationJob.java   # Async job with params
-│   │   │       └── LongRunningJob.java        # Stop/timeout demo
-│   │   └── resources/
-│   │       ├── application.yml                # Default config (H2)
-│   │       └── application-postgres.yml       # PostgreSQL profile
-│   └── test/
-│       ├── java/com/fluffy/example/
-│       │   ├── ExampleApplicationTest.java
-│       │   └── jobs/
-│       │       ├── DataSyncJobTest.java
-│       │       ├── ReportGenerationJobTest.java
-│       │       └── LongRunningJobTest.java
-│       └── resources/
-│           └── application.yml                # Test config (H2)
-├── Dockerfile
-├── pom.xml
-└── README.md
+fluffy-batch-starter/
+└── fluffy-batch-example/
+    ├── src/
+    │   ├── main/
+    │   │   ├── java/com/fluffy/example/
+    │   │   │   ├── ExampleApplication.java       # Spring Boot entry point
+    │   │   │   └── jobs/
+    │   │   │       ├── DataSyncJob.java           # Sync job example
+    │   │   │       ├── ReportGenerationJob.java   # Async job with params
+    │   │   │       └── LongRunningJob.java        # Stop/timeout demo
+    │   │   └── resources/
+    │   │       ├── application.yml                # Default config (H2, dashboard enabled)
+    │   │       └── application-postgres.yml       # PostgreSQL profile
+    │   └── test/
+    │       ├── java/com/fluffy/example/
+    │       │   ├── ExampleApplicationTest.java
+    │       │   └── jobs/
+    │       │       ├── DataSyncJobTest.java
+    │       │       ├── ReportGenerationJobTest.java
+    │       │       └── LongRunningJobTest.java
+    │       └── resources/
+    │           └── application.yml                # Test config (H2)
+    ├── k8s/
+    │   ├── app.yaml                               # K8s Deployment + Service
+    │   └── postgres.yaml                          # PostgreSQL Deployment + Service
+    ├── Dockerfile
+    ├── pom.xml
+    └── README.md
 ```
 
 ## License
 
-This project is licensed under the [Apache License 2.0](../LICENSE).
+This project is licensed under the [Apache License 2.0](../../LICENSE).

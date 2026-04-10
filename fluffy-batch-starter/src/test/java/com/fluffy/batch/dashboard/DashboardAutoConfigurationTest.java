@@ -27,11 +27,11 @@ class DashboardAutoConfigurationTest {
     }
 
     @Test
-    void shouldRegisterDashboardBeansByDefault() {
+    void shouldNotRegisterDashboardBeansByDefault() {
         contextRunner
                 .run(context -> {
-                    assertThat(context).hasSingleBean(DashboardConfigController.class);
-                    assertThat(context).hasSingleBean(DashboardProperties.class);
+                    assertThat(context).doesNotHaveBean(DashboardConfigController.class);
+                    assertThat(context).doesNotHaveBean("dashboardResourceConfigurer");
                 });
     }
 
@@ -49,6 +49,7 @@ class DashboardAutoConfigurationTest {
     void shouldRespectCustomProperties() {
         contextRunner
                 .withPropertyValues(
+                        "fluffy.batch.dashboard.enabled=true",
                         "fluffy.batch.dashboard.title=My Dashboard",
                         "fluffy.batch.dashboard.refresh-interval=10",
                         "fluffy.batch.dashboard.auth-enabled=true"
@@ -64,7 +65,8 @@ class DashboardAutoConfigurationTest {
     @Test
     void shouldNormalizePathWithoutLeadingSlash() {
         contextRunner
-                .withPropertyValues("fluffy.batch.dashboard.path=custom-path")
+                .withPropertyValues("fluffy.batch.dashboard.enabled=true",
+                        "fluffy.batch.dashboard.path=custom-path")
                 .run(context -> {
                     WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
                     assertThat(configurer).isNotNull();
@@ -78,7 +80,8 @@ class DashboardAutoConfigurationTest {
     @Test
     void shouldNormalizePathWithTrailingSlash() {
         contextRunner
-                .withPropertyValues("fluffy.batch.dashboard.path=/custom-path/")
+                .withPropertyValues("fluffy.batch.dashboard.enabled=true",
+                        "fluffy.batch.dashboard.path=/custom-path/")
                 .run(context -> {
                     WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
                     ResourceHandlerRegistry registry = new ResourceHandlerRegistry(
@@ -90,7 +93,8 @@ class DashboardAutoConfigurationTest {
     @Test
     void shouldNormalizeBlankPath() {
         contextRunner
-                .withPropertyValues("fluffy.batch.dashboard.path=  ")
+                .withPropertyValues("fluffy.batch.dashboard.enabled=true",
+                        "fluffy.batch.dashboard.path=  ")
                 .run(context -> {
                     WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
                     ResourceHandlerRegistry registry = new ResourceHandlerRegistry(

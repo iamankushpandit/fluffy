@@ -11,3 +11,8 @@ spring:
   threads:
     virtual:
       enabled: true
+
+fluffy:
+  batch:
+    dashboard:
+      enabled: true

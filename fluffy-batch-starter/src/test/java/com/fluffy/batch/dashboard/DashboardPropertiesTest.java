@@ -10,7 +10,7 @@ class DashboardPropertiesTest {
     void shouldHaveDefaultValues() {
         DashboardProperties props = new DashboardProperties();
 
-        assertThat(props.isEnabled()).isTrue();
+        assertThat(props.isEnabled()).isFalse();
         assertThat(props.getPath()).isEqualTo("/fluffy-dashboard");
         assertThat(props.getTitle()).isEqualTo("Fluffy Batch Dashboard");
         assertThat(props.getRefreshInterval()).isEqualTo(5);
@@ -21,13 +21,13 @@ class DashboardPropertiesTest {
     void shouldSetAndGetAllProperties() {
         DashboardProperties props = new DashboardProperties();
 
-        props.setEnabled(false);
+        props.setEnabled(true);
         props.setPath("/custom-path");
         props.setTitle("Custom Title");
         props.setRefreshInterval(10);
         props.setAuthEnabled(true);
 
-        assertThat(props.isEnabled()).isFalse();
+        assertThat(props.isEnabled()).isTrue();
         assertThat(props.getPath()).isEqualTo("/custom-path");
         assertThat(props.getTitle()).isEqualTo("Custom Title");
         assertThat(props.getRefreshInterval()).isEqualTo(10);
