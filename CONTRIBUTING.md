@@ -41,8 +41,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ## Coding Standards
 
-- **Java version**: 17
-- **Framework**: Spring Boot 3.2
+- **Java version**: 21
+- **Framework**: Spring Boot 3.4
 - **Build tool**: Maven
 - Follow standard Java naming conventions and formatting.
 - Write meaningful Javadoc for public APIs.
