@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:fluffydb}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:fluffy}
+    password: ${POSTGRES_PASSWORD:fluffy}
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  threads:
+    virtual:
+      enabled: true
+
+logging:
+  level:
+    com.fluffy: INFO

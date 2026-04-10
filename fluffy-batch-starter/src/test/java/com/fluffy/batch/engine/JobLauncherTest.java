@@ -3,10 +3,10 @@ package com.fluffy.batch.engine;
 import com.fluffy.batch.api.JobContext;
 import com.fluffy.batch.api.JobRequest;
 import com.fluffy.batch.model.JobExecution;
-import com.fluffy.batch.model.JobStatus;
 import com.fluffy.batch.persistence.JobExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -83,7 +83,7 @@ class JobLauncherTest {
 
         assertThat(executionId).isNotNull();
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
         assertThat(execution.getRequestedBy()).isEqualTo("test-user");
     }
 
@@ -97,7 +97,7 @@ class JobLauncherTest {
         Thread.sleep(500);
 
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getStatus()).isIn(JobStatus.SUCCESS, JobStatus.IN_PROGRESS, JobStatus.STARTED);
+        assertThat(execution.getStatus()).isIn(BatchStatus.COMPLETED, BatchStatus.STARTED);
     }
 
     @Test
@@ -114,7 +114,7 @@ class JobLauncherTest {
 
         Long executionId = jobLauncher.launch("param-test-job", request);
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
     }
 
     @Test
@@ -130,7 +130,7 @@ class JobLauncherTest {
         Thread.sleep(300);
 
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getStatus()).isIn(JobStatus.STOPPED, JobStatus.IN_PROGRESS, JobStatus.STARTED);
+        assertThat(execution.getStatus()).isIn(BatchStatus.STOPPED, BatchStatus.STARTED);
     }
 
     @Test
@@ -139,13 +139,13 @@ class JobLauncherTest {
         Long executionId = jobLauncher.launch("sync-test-job", request);
 
         JobExecution execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
         Long retryId = jobLauncher.retry(executionId);
         assertThat(retryId).isNotNull();
         assertThat(retryId).isNotEqualTo(executionId);
 
         JobExecution retryExecution = executionRepository.findById(retryId).orElseThrow();
-        assertThat(retryExecution.getStatus()).isEqualTo(JobStatus.SUCCESS);
+        assertThat(retryExecution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
     }
 }

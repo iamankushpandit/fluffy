@@ -10,7 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @AutoConfiguration
 @ConditionalOnWebApplication
-@ConditionalOnProperty(name = "fluffy.batch.dashboard.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "fluffy.batch.dashboard.enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(DashboardProperties.class)
 public class DashboardAutoConfiguration {
 
