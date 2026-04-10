@@ -145,7 +145,7 @@ const FluffyRender = (() => {
     if (requiredParams && requiredParams.length > 0) {
       requiredParams.forEach(p => {
         html += '<div class="form-group">' +
-          '<label class="form-label" for="param-' + escapeHtml(p) + '">' + escapeHtml(p) + ' <span style="color:var(--danger)">*</span></label>' +
+          '<label class="form-label" for="param-' + escapeHtml(p) + '">' + escapeHtml(p) + ' <span class="required-marker">*</span></label>' +
           '<input class="form-input" id="param-' + escapeHtml(p) + '" name="' + escapeHtml(p) + '" data-param="' + escapeHtml(p) + '" required>' +
         '</div>';
       });
