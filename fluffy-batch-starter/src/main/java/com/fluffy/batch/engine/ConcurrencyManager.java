@@ -1,13 +1,16 @@
 package com.fluffy.batch.engine;
 
-import org.springframework.stereotype.Component;
+import com.fluffy.batch.backend.CoordinationBackend;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Component
-public class ConcurrencyManager {
+/**
+ * In-memory concurrency coordination for single-node / H2 mode.
+ * State is not shared across nodes and will be lost on restart.
+ */
+public class ConcurrencyManager implements CoordinationBackend {
 
     private final Map<String, AtomicInteger> jobCounters = new ConcurrentHashMap<>();
     private final AtomicInteger globalCounter = new AtomicInteger(0);

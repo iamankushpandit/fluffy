@@ -21,6 +21,8 @@ server:
 
 fluffy:
   batch:
+    backend:
+      type: h2
     dashboard:
       enabled: true
 

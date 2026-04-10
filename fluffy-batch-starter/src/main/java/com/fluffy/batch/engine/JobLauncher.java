@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluffy.batch.api.JobContext;
 import com.fluffy.batch.api.JobRequest;
+import com.fluffy.batch.backend.CoordinationBackend;
+import com.fluffy.batch.backend.QueueBackend;
 import com.fluffy.batch.model.JobExecution;
 import com.fluffy.batch.persistence.JobExecutionRepository;
-import com.fluffy.batch.persistence.JobQueueManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
@@ -29,9 +30,9 @@ public class JobLauncher {
     private static final Logger log = LoggerFactory.getLogger(JobLauncher.class);
 
     private final JobRegistry jobRegistry;
-    private final ConcurrencyManager concurrencyManager;
+    private final CoordinationBackend coordinationBackend;
     private final JobExecutionRepository executionRepository;
-    private final JobQueueManager queueManager;
+    private final QueueBackend queueBackend;
     private final ExecutorService executorService;
     private final ScheduledExecutorService scheduledExecutorService;
     private final ObjectMapper objectMapper;
@@ -40,16 +41,16 @@ public class JobLauncher {
     private final Map<Long, Future<?>> runningFutures = new ConcurrentHashMap<>();
 
     public JobLauncher(JobRegistry jobRegistry,
-                       ConcurrencyManager concurrencyManager,
+                       CoordinationBackend coordinationBackend,
                        JobExecutionRepository executionRepository,
-                       JobQueueManager queueManager,
+                       QueueBackend queueBackend,
                        @Qualifier("jobExecutorService") ExecutorService executorService,
                        @Qualifier("jobScheduledExecutorService") ScheduledExecutorService scheduledExecutorService,
                        ObjectMapper objectMapper) {
         this.jobRegistry = jobRegistry;
-        this.concurrencyManager = concurrencyManager;
+        this.coordinationBackend = coordinationBackend;
         this.executionRepository = executionRepository;
-        this.queueManager = queueManager;
+        this.queueBackend = queueBackend;
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.objectMapper = objectMapper;
@@ -86,8 +87,8 @@ public class JobLauncher {
 
         JobContext context = new JobContext(executionId, jobName, requestedBy, params, request.arguments());
 
-        if (concurrencyManager.canRun(jobName, def.maxConcurrency())) {
-            concurrencyManager.increment(jobName);
+        if (coordinationBackend.canRun(jobName, def.maxConcurrency())) {
+            coordinationBackend.increment(jobName);
             updateStatus(executionId, BatchStatus.STARTED);
             if (def.async()) {
                 runJobAsync(executionId, def, context);
@@ -95,9 +96,9 @@ public class JobLauncher {
                 runJobSync(executionId, def, context);
             }
         } else {
-            queueManager.enqueue(executionId);
+            queueBackend.enqueue(executionId);
             runningContexts.put(executionId, context);
-            Integer pos = queueManager.getPosition(executionId);
+            Integer pos = queueBackend.getPosition(executionId);
             JobExecution queued = executionRepository.findById(executionId).orElseThrow();
             queued.setQueuePosition(pos);
             executionRepository.save(queued);
@@ -108,8 +109,8 @@ public class JobLauncher {
     }
 
     public boolean stop(Long executionId) {
-        if (queueManager.contains(executionId)) {
-            queueManager.remove(executionId);
+        if (queueBackend.contains(executionId)) {
+            queueBackend.remove(executionId);
             JobContext ctx = runningContexts.remove(executionId);
             if (ctx != null) ctx.markStopRequested();
             updateStatus(executionId, BatchStatus.STOPPED);
@@ -186,15 +187,15 @@ public class JobLauncher {
         } finally {
             runningContexts.remove(executionId);
             runningFutures.remove(executionId);
-            concurrencyManager.decrement(def.name());
+            coordinationBackend.decrement(def.name());
             setEndTime(executionId);
             processQueue(def.name(), def.maxConcurrency());
         }
     }
 
     private void processQueue(String jobName, int maxConcurrency) {
-        while (concurrencyManager.canRun(jobName, maxConcurrency)) {
-            Long nextId = queueManager.poll();
+        while (coordinationBackend.canRun(jobName, maxConcurrency)) {
+            Long nextId = queueBackend.poll();
             if (nextId == null) {
                 break;
             }
@@ -204,7 +205,7 @@ public class JobLauncher {
                 continue;
             }
             JobDefinition def = jobRegistry.get(jobName);
-            concurrencyManager.increment(jobName);
+            coordinationBackend.increment(jobName);
             updateStatus(nextId, BatchStatus.STARTED);
             if (def.async()) {
                 runJobAsync(nextId, def, nextContext);
