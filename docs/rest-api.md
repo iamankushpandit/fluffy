@@ -46,6 +46,19 @@ Body (optional):
 }
 ```
 
+## Error Format (RFC 7807)
+
+Errors are returned as [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807):
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Job not found: unknown-job"
+}
+```
+
 ## Status Values
 
 - `IN_QUEUE` - waiting to run
