@@ -63,4 +63,11 @@ class ConcurrencyManagerTest {
         manager.decrement("job1");
         assertThat(manager.getGlobalRunningCount()).isEqualTo(1);
     }
+
+    @Test
+    void shouldHandleDecrementForUnknownJob() {
+        // decrement on a job that was never incremented should be a no-op
+        manager.decrement("unknown-job");
+        assertThat(manager.getGlobalRunningCount()).isEqualTo(0);
+    }
 }

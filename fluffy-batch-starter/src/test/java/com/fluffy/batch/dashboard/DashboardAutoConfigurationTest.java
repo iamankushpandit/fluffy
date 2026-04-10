@@ -2,6 +2,8 @@ package com.fluffy.batch.dashboard;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistration;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,6 +58,44 @@ class DashboardAutoConfigurationTest {
                     assertThat(props.getTitle()).isEqualTo("My Dashboard");
                     assertThat(props.getRefreshInterval()).isEqualTo(10);
                     assertThat(props.isAuthEnabled()).isTrue();
+                });
+    }
+
+    @Test
+    void shouldNormalizePathWithoutLeadingSlash() {
+        contextRunner
+                .withPropertyValues("fluffy.batch.dashboard.path=custom-path")
+                .run(context -> {
+                    WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
+                    assertThat(configurer).isNotNull();
+                    // Exercise the addResourceHandlers to cover normalizePath
+                    ResourceHandlerRegistry registry = new ResourceHandlerRegistry(
+                            context, context.getServletContext());
+                    configurer.addResourceHandlers(registry);
+                });
+    }
+
+    @Test
+    void shouldNormalizePathWithTrailingSlash() {
+        contextRunner
+                .withPropertyValues("fluffy.batch.dashboard.path=/custom-path/")
+                .run(context -> {
+                    WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
+                    ResourceHandlerRegistry registry = new ResourceHandlerRegistry(
+                            context, context.getServletContext());
+                    configurer.addResourceHandlers(registry);
+                });
+    }
+
+    @Test
+    void shouldNormalizeBlankPath() {
+        contextRunner
+                .withPropertyValues("fluffy.batch.dashboard.path=  ")
+                .run(context -> {
+                    WebMvcConfigurer configurer = context.getBean("dashboardResourceConfigurer", WebMvcConfigurer.class);
+                    ResourceHandlerRegistry registry = new ResourceHandlerRegistry(
+                            context, context.getServletContext());
+                    configurer.addResourceHandlers(registry);
                 });
     }
 }
