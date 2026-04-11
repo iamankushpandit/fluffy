@@ -34,7 +34,7 @@ class NodeDiscoveryServiceTest {
 
         NodeDiscoveryService service = new NodeDiscoveryService(props);
 
-        assertThat(service.getNodes()).containsExactly("http://node1:8080", "http://node2:8080/");
+        assertThat(service.getNodes()).containsExactly("http://node1:8080", "http://node2:8080");
     }
 
     @Test

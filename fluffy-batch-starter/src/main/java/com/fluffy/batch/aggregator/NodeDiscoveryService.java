@@ -39,7 +39,7 @@ public class NodeDiscoveryService {
         for (String url : configured) {
             if (url != null && !url.isBlank()) {
                 String trimmed = url.strip();
-                if (trimmed.endsWith("/")) {
+                while (trimmed.endsWith("/")) {
                     trimmed = trimmed.substring(0, trimmed.length() - 1);
                 }
                 normalized.add(trimmed);

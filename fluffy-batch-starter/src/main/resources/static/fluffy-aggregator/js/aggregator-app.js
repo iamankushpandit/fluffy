@@ -128,20 +128,17 @@
         .finally(function () { setLoading(false); });
     }
 
-    // Initial load + periodic polling
+    // Initial load
     React.useEffect(function () {
       fetchJSON('/api/aggregator/config')
         .then(function (c) { setConfig(c); })
         .catch(function () { /* ignore */ });
       loadData();
-      var interval = setInterval(loadData, 10000);
-      return function () { clearInterval(interval); };
     }, []);
 
-    // Update interval when config is known
+    // Periodic polling driven by config
     React.useEffect(function () {
-      if (!config) return;
-      var ms = (config.pollIntervalSeconds || 10) * 1000;
+      var ms = (config && config.pollIntervalSeconds ? config.pollIntervalSeconds : 10) * 1000;
       var interval = setInterval(loadData, ms);
       return function () { clearInterval(interval); };
     }, [config]);
