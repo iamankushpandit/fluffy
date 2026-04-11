@@ -10,4 +10,5 @@ public interface JobExecutionRepository extends JpaRepository<JobExecution, Long
     List<JobExecution> findByJobNameOrderByStartTimeDesc(String jobName);
     List<JobExecution> findByStatus(BatchStatus status);
     List<JobExecution> findAllByOrderByStartTimeDesc();
+    List<JobExecution> findByOwnerNodeAndStatus(String ownerNode, BatchStatus status);
 }

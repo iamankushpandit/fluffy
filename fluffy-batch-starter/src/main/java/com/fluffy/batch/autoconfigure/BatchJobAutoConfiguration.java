@@ -1,5 +1,8 @@
 package com.fluffy.batch.autoconfigure;
 
+import com.fluffy.batch.backend.BackendType;
+import com.fluffy.batch.backend.CoordinationBackend;
+import com.fluffy.batch.backend.QueueBackend;
 import com.fluffy.batch.engine.ConcurrencyManager;
 import com.fluffy.batch.engine.JobLauncher;
 import com.fluffy.batch.engine.JobRegistry;
@@ -11,6 +14,7 @@ import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -23,9 +27,32 @@ import java.util.concurrent.ScheduledExecutorService;
 @ConditionalOnClass(JobRegistry.class)
 @EnableJpaRepositories(basePackages = "com.fluffy.batch.persistence")
 @EntityScan(basePackages = "com.fluffy.batch.model")
-@Import({JobRegistry.class, JobLauncher.class, ConcurrencyManager.class,
-         JobQueueManager.class, JobController.class, GlobalExceptionHandler.class})
+@EnableConfigurationProperties(BackendProperties.class)
+@Import({JobRegistry.class, JobLauncher.class,
+         JobController.class, GlobalExceptionHandler.class})
 public class BatchJobAutoConfiguration {
+
+    /**
+     * Creates the appropriate {@link QueueBackend} based on the configured backend type.
+     * For H2 mode, uses in-memory queue. Database and Kafka modes will provide
+     * their own implementations when those modules are active.
+     */
+    @Bean
+    @ConditionalOnMissingBean(QueueBackend.class)
+    public QueueBackend queueBackend(BackendProperties properties) {
+        return new JobQueueManager();
+    }
+
+    /**
+     * Creates the appropriate {@link CoordinationBackend} based on the configured backend type.
+     * For H2 mode, uses in-memory coordination. Database and Kafka modes will provide
+     * their own implementations when those modules are active.
+     */
+    @Bean
+    @ConditionalOnMissingBean(CoordinationBackend.class)
+    public CoordinationBackend coordinationBackend(BackendProperties properties) {
+        return new ConcurrencyManager();
+    }
 
     /**
      * Uses Java 21 virtual threads for lightweight, high-throughput job execution.
@@ -44,3 +71,4 @@ public class BatchJobAutoConfiguration {
         return Executors.newScheduledThreadPool(4);
     }
 }
+

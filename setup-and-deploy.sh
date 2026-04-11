@@ -236,7 +236,7 @@ if [ $? -ne 0 ]; then
 fi
 write_ok "PostgreSQL is ready"
 
-# Deploy the example app
+# Deploy the example app (original postgres-backed instance)
 printf "  Deploying Fluffy Batch Example...\n"
 kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n fluffy
 if [ $? -ne 0 ]; then
@@ -253,6 +253,83 @@ if [ $? -ne 0 ]; then
 fi
 write_ok "Application is ready"
 
+# Deploy Kafka
+printf "  Deploying Kafka...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n fluffy
+if [ $? -ne 0 ]; then
+    write_fail "Kafka manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for Kafka to be ready...\n"
+kubectl rollout status deployment/kafka -n fluffy --timeout=180s
+if [ $? -ne 0 ]; then
+    write_fail "Kafka deployment did not become ready."
+    printf "  ${YELLOW}Check: kubectl describe pods -l app=kafka -n fluffy${NC}\n"
+    exit 1
+fi
+write_ok "Kafka is ready"
+
+# Deploy H2-backed instance
+printf "  Deploying Fluffy Batch H2 instance...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n fluffy
+if [ $? -ne 0 ]; then
+    write_fail "H2 instance manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for H2 instance to be ready...\n"
+kubectl rollout status deployment/fluffy-batch-h2 -n fluffy --timeout=180s
+if [ $? -ne 0 ]; then
+    write_fail "H2 instance did not become ready."
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-h2 -n fluffy${NC}\n"
+    exit 1
+fi
+write_ok "H2 instance is ready"
+
+# Deploy database-backed instance
+printf "  Deploying Fluffy Batch DB instance...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n fluffy
+if [ $? -ne 0 ]; then
+    write_fail "DB instance manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for DB instance to be ready...\n"
+kubectl rollout status deployment/fluffy-batch-db -n fluffy --timeout=180s
+if [ $? -ne 0 ]; then
+    write_fail "DB instance did not become ready."
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-db -n fluffy${NC}\n"
+    exit 1
+fi
+write_ok "DB instance is ready"
+
+# Deploy Kafka-backed instance
+printf "  Deploying Fluffy Batch Kafka instance...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n fluffy
+if [ $? -ne 0 ]; then
+    write_fail "Kafka instance manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for Kafka instance to be ready...\n"
+kubectl rollout status deployment/fluffy-batch-kafka -n fluffy --timeout=180s
+if [ $? -ne 0 ]; then
+    write_fail "Kafka instance did not become ready."
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-kafka -n fluffy${NC}\n"
+    exit 1
+fi
+write_ok "Kafka instance is ready"
+
+# Optionally apply HorizontalPodAutoscaler
+printf "  Applying HorizontalPodAutoscaler for DB instance...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n fluffy
+if [ $? -ne 0 ]; then
+    write_warn "HPA apply failed (metrics-server may not be available). Skipping."
+else
+    write_ok "HPA applied (fluffy-batch-db: 1–5 replicas, 70% CPU target)"
+fi
+
 # ---------------------------------------------------------------------------
 # 7. Print access information
 # ---------------------------------------------------------------------------
@@ -260,19 +337,38 @@ write_ok "Application is ready"
 write_step "Deployment complete!"
 
 service_url=$(minikube service fluffy-batch-example -n fluffy --url 2>/dev/null | head -1)
+minikube_ip=$(minikube ip 2>/dev/null || echo "$(hostname -I | awk '{print $1}')")
 
 printf "\n"
 printf "  ${GREEN}Fluffy Batch Example is running!${NC}\n"
 printf "\n"
+printf "  ${WHITE}--- Original instance (postgres profile) ---${NC}\n"
 printf "  ${WHITE}Dashboard       : %s/fluffy-dashboard/index.html${NC}\n" "$service_url"
 printf "  ${WHITE}Application URL : %s${NC}\n" "$service_url"
 printf "  ${WHITE}API Base        : %s/api/jobs${NC}\n" "$service_url"
 printf "  ${WHITE}Registered Jobs : %s/api/jobs/registered${NC}\n" "$service_url"
 printf "\n"
+printf "  ${WHITE}--- H2 instance (in-memory, no external DB) ---${NC}\n"
+printf "  ${WHITE}Application URL : http://%s:30081${NC}\n" "$minikube_ip"
+printf "  ${WHITE}H2 Console      : http://%s:30081/h2-console${NC}\n" "$minikube_ip"
+printf "  ${WHITE}API Base        : http://%s:30081/api/jobs${NC}\n" "$minikube_ip"
+printf "\n"
+printf "  ${WHITE}--- Database instance (database profile) ---${NC}\n"
+printf "  ${WHITE}Application URL : http://%s:30082${NC}\n" "$minikube_ip"
+printf "  ${WHITE}API Base        : http://%s:30082/api/jobs${NC}\n" "$minikube_ip"
+printf "\n"
+printf "  ${WHITE}--- Kafka instance (kafka profile) ---${NC}\n"
+printf "  ${WHITE}Application URL : http://%s:30083${NC}\n" "$minikube_ip"
+printf "  ${WHITE}API Base        : http://%s:30083/api/jobs${NC}\n" "$minikube_ip"
+printf "\n"
 printf "  ${YELLOW}Useful commands:${NC}\n"
 printf "    kubectl get pods -n fluffy                                # Check pod status\n"
-printf "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View app logs\n"
+printf "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View original app logs\n"
+printf "    kubectl logs -l app=fluffy-batch-h2 -n fluffy             # View H2 instance logs\n"
+printf "    kubectl logs -l app=fluffy-batch-db -n fluffy             # View DB instance logs\n"
+printf "    kubectl logs -l app=fluffy-batch-kafka -n fluffy          # View Kafka instance logs\n"
 printf "    kubectl logs -l app=postgres -n fluffy                    # View PostgreSQL logs\n"
+printf "    kubectl logs -l app=kafka -n fluffy                       # View Kafka logs\n"
 printf "    minikube dashboard                                        # Open K8s dashboard\n"
 printf "\n"
 printf "  ${YELLOW}To tear down:${NC}\n"

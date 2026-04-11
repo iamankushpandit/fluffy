@@ -1,0 +1,448 @@
+{
+  "info": {
+    "name": "Fluffy Batch Starter",
+    "_postman_id": "fluffy-batch-collection",
+    "description": "API collection for the Fluffy Batch Starter — a Spring Boot batch job processing framework with pluggable backends (H2, Database, Kafka).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "H2 Instance",
+      "description": "Requests targeting the H2 (in-memory) backend instance.",
+      "item": [
+        {
+          "name": "List Registered Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/registered",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "registered"]
+            },
+            "description": "Returns all registered job definitions."
+          },
+          "response": []
+        },
+        {
+          "name": "Start Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobName\": \"longRunningJob\",\n  \"parameters\": {\n    \"delay\": 5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/start",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "start"]
+            },
+            "description": "Starts a new job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/status/{{executionId}}",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "status", "{{executionId}}"]
+            },
+            "description": "Returns the current status of a job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/stop/{{executionId}}",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "stop", "{{executionId}}"]
+            },
+            "description": "Stops a running or queued job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/retry/{{executionId}}",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "retry", "{{executionId}}"]
+            },
+            "description": "Retries a completed, failed, or stopped job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "List Executions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/executions",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "executions"]
+            },
+            "description": "Returns all job executions ordered by start time descending."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Scaling Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/config/scaling",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Returns the current scaling configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Scaling Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxQueueDepth\": 200\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/config/scaling",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Updates the scaling configuration at runtime."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Database Instance",
+      "description": "Requests targeting the Database (PostgreSQL) backend instance.",
+      "item": [
+        {
+          "name": "List Registered Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/registered",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "registered"]
+            },
+            "description": "Returns all registered job definitions."
+          },
+          "response": []
+        },
+        {
+          "name": "Start Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobName\": \"longRunningJob\",\n  \"parameters\": {\n    \"delay\": 5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/start",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "start"]
+            },
+            "description": "Starts a new job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/status/{{executionId}}",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "status", "{{executionId}}"]
+            },
+            "description": "Returns the current status of a job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/stop/{{executionId}}",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "stop", "{{executionId}}"]
+            },
+            "description": "Stops a running or queued job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/retry/{{executionId}}",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "retry", "{{executionId}}"]
+            },
+            "description": "Retries a completed, failed, or stopped job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "List Executions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/executions",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "executions"]
+            },
+            "description": "Returns all job executions ordered by start time descending."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Scaling Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/config/scaling",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Returns the current scaling configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Scaling Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxQueueDepth\": 200\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{dbUrl}}/api/jobs/config/scaling",
+              "host": ["{{dbUrl}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Updates the scaling configuration at runtime."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Kafka Instance",
+      "description": "Requests targeting the Kafka backend instance.",
+      "item": [
+        {
+          "name": "List Registered Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/registered",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "registered"]
+            },
+            "description": "Returns all registered job definitions."
+          },
+          "response": []
+        },
+        {
+          "name": "Start Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobName\": \"longRunningJob\",\n  \"parameters\": {\n    \"delay\": 5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/start",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "start"]
+            },
+            "description": "Starts a new job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/status/{{executionId}}",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "status", "{{executionId}}"]
+            },
+            "description": "Returns the current status of a job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/stop/{{executionId}}",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "stop", "{{executionId}}"]
+            },
+            "description": "Stops a running or queued job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/retry/{{executionId}}",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "retry", "{{executionId}}"]
+            },
+            "description": "Retries a completed, failed, or stopped job execution."
+          },
+          "response": []
+        },
+        {
+          "name": "List Executions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/executions",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "executions"]
+            },
+            "description": "Returns all job executions ordered by start time descending."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Scaling Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/config/scaling",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Returns the current scaling configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Scaling Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxQueueDepth\": 200\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{kafkaUrl}}/api/jobs/config/scaling",
+              "host": ["{{kafkaUrl}}"],
+              "path": ["api", "jobs", "config", "scaling"]
+            },
+            "description": "Updates the scaling configuration at runtime."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

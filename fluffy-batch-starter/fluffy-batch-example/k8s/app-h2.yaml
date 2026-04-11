@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluffy-batch-h2
+  namespace: fluffy
+  labels:
+    app: fluffy-batch-h2
+    backend: h2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluffy-batch-h2
+  template:
+    metadata:
+      labels:
+        app: fluffy-batch-h2
+        backend: h2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: fluffy-batch-h2
+          image: fluffy-batch-example:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /api/jobs/registered
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/jobs/registered
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluffy-batch-h2
+  namespace: fluffy
+spec:
+  selector:
+    app: fluffy-batch-h2
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30081
+  type: NodePort

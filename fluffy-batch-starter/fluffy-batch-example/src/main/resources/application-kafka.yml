@@ -21,7 +21,11 @@ spring:
 fluffy:
   batch:
     backend:
-      type: database
+      type: kafka
+      kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+        topic: ${KAFKA_TOPIC:fluffy-jobs}
+        group-id: ${KAFKA_GROUP_ID:fluffy-batch}
 
 logging:
   level:

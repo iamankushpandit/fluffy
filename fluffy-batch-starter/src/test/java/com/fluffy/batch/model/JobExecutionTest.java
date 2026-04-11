@@ -25,6 +25,7 @@ class JobExecutionTest {
         execution.setArguments("some-args");
         execution.setQueuePosition(3);
         execution.setErrorMessage("some error");
+        execution.setOwnerNode("node-1");
 
         assertThat(execution.getId()).isEqualTo(1L);
         assertThat(execution.getJobName()).isEqualTo("test-job");
@@ -36,6 +37,7 @@ class JobExecutionTest {
         assertThat(execution.getArguments()).isEqualTo("some-args");
         assertThat(execution.getQueuePosition()).isEqualTo(3);
         assertThat(execution.getErrorMessage()).isEqualTo("some error");
+        assertThat(execution.getOwnerNode()).isEqualTo("node-1");
     }
 
     @Test
@@ -52,5 +54,6 @@ class JobExecutionTest {
         assertThat(execution.getArguments()).isNull();
         assertThat(execution.getQueuePosition()).isNull();
         assertThat(execution.getErrorMessage()).isNull();
+        assertThat(execution.getOwnerNode()).isNull();
     }
 }
