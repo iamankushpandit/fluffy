@@ -140,3 +140,15 @@ All assets are served as static resources from `classpath:/static/fluffy-dashboa
 - No pagination yet for large execution histories
 - No server-sent events — uses polling via auto-refresh
 - No built-in role-based access control — use Spring Security if needed
+
+## Multi-Node Aggregator Dashboard
+
+For multi-node deployments, Fluffy also provides an **aggregator dashboard** that
+collects job metrics from every node and presents a unified view built with
+React and Material-UI.
+
+Each node exposes `GET /api/jobs/summary` with job counts and a dashboard
+availability flag.  The aggregator polls these summaries and serves a React-based
+UI at `/fluffy-aggregator`.
+
+See [Aggregator Dashboard](aggregator.md) for full details.

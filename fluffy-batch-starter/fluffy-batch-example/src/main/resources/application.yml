@@ -27,6 +27,14 @@ fluffy:
       enabled: true
     metrics:
       enabled: true
+    aggregator:
+      enabled: false
+      # To enable the aggregator, set enabled: true and list node URLs:
+      # nodes:
+      #   - http://localhost:8081
+      #   - http://localhost:8082
+      # poll-interval-seconds: 10
+      # discovery-interval-seconds: 30
 
 management:
   endpoints:
