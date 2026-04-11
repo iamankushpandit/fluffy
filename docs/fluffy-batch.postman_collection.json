@@ -299,6 +299,82 @@
       ]
     },
     {
+      "name": "Node Summary & Aggregator",
+      "description": "Node summary endpoint exposed by each Fluffy node, and aggregator endpoints for the multi-node dashboard.",
+      "item": [
+        {
+          "name": "Node Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{h2Url}}/api/jobs/summary",
+              "host": ["{{h2Url}}"],
+              "path": ["api", "jobs", "summary"]
+            },
+            "description": "Returns a lightweight summary of job metrics for a single node, including queued, running, succeeded, and failed counts plus dashboard availability."
+          },
+          "response": []
+        },
+        {
+          "name": "Aggregated Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{aggregatorUrl}}/api/aggregator/summary",
+              "host": ["{{aggregatorUrl}}"],
+              "path": ["api", "aggregator", "summary"]
+            },
+            "description": "Returns aggregated job metrics across all discovered nodes, plus per-node breakdowns."
+          },
+          "response": []
+        },
+        {
+          "name": "List Node Summaries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{aggregatorUrl}}/api/aggregator/nodes",
+              "host": ["{{aggregatorUrl}}"],
+              "path": ["api", "aggregator", "nodes"]
+            },
+            "description": "Returns per-node summaries only."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Aggregator",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{aggregatorUrl}}/api/aggregator/refresh",
+              "host": ["{{aggregatorUrl}}"],
+              "path": ["api", "aggregator", "refresh"]
+            },
+            "description": "Triggers an immediate node discovery refresh and poll, then returns the aggregated summary."
+          },
+          "response": []
+        },
+        {
+          "name": "Aggregator Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{aggregatorUrl}}/api/aggregator/config",
+              "host": ["{{aggregatorUrl}}"],
+              "path": ["api", "aggregator", "config"]
+            },
+            "description": "Returns the current aggregator configuration including poll interval and node count."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Kafka Instance",
       "description": "Requests targeting the Kafka backend instance.",
       "item": [

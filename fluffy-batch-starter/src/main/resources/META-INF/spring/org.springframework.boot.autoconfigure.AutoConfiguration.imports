@@ -5,3 +5,4 @@ com.fluffy.batch.autoconfigure.MetricsAutoConfiguration
 com.fluffy.batch.autoconfigure.ScalingAutoConfiguration
 com.fluffy.batch.autoconfigure.BatchJobAutoConfiguration
 com.fluffy.batch.dashboard.DashboardAutoConfiguration
+com.fluffy.batch.aggregator.AggregatorAutoConfiguration
