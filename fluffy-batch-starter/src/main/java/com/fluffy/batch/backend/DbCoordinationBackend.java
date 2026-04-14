@@ -39,14 +39,13 @@ public class DbCoordinationBackend implements CoordinationBackend {
     @Transactional(readOnly = true)
     public int getRunningCount(String jobName) {
         return (int) executionRepository.findByJobNameOrderByStartTimeDesc(jobName).stream()
-                .filter(e -> e.getStatus() == BatchStatus.STARTED || e.getStatus() == BatchStatus.STARTING)
+                .filter(e -> e.getStatus() == BatchStatus.STARTED)
                 .count();
     }
 
     @Override
     @Transactional(readOnly = true)
     public int getGlobalRunningCount() {
-        return executionRepository.findByStatus(BatchStatus.STARTED).size()
-                + executionRepository.findByStatus(BatchStatus.STARTING).size();
+        return executionRepository.findByStatus(BatchStatus.STARTED).size();
     }
 }

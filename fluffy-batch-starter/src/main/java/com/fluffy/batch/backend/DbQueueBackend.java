@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,6 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Database-backed queue implementation.
  * Persists queue state to a shared database so that it survives restarts and
  * can be shared across multiple application nodes.
+ * <p>
+ * Uses pessimistic locking ({@code SELECT FOR UPDATE SKIP LOCKED}) on
+ * {@link #poll()} to ensure that only one node can claim a given queue entry,
+ * preventing duplicate job execution in multi-node deployments.
+ * </p>
  */
 public class DbQueueBackend implements QueueBackend {
 
@@ -22,9 +28,11 @@ public class DbQueueBackend implements QueueBackend {
 
     private final QueueEntryRepository queueEntryRepository;
     private final AtomicInteger positionCounter = new AtomicInteger(0);
+    private final String nodeId;
 
-    public DbQueueBackend(QueueEntryRepository queueEntryRepository) {
+    public DbQueueBackend(QueueEntryRepository queueEntryRepository, String nodeId) {
         this.queueEntryRepository = queueEntryRepository;
+        this.nodeId = nodeId;
     }
 
     @Override
@@ -39,12 +47,14 @@ public class DbQueueBackend implements QueueBackend {
     @Override
     @Transactional
     public Long poll() {
-        Optional<QueueEntry> entry = queueEntryRepository.findFirstByStatusOrderByIdAsc(QUEUED);
+        Optional<QueueEntry> entry = queueEntryRepository.findFirstByStatusForUpdate(QUEUED);
         if (entry.isPresent()) {
             QueueEntry qe = entry.get();
             qe.setStatus(CLAIMED);
+            qe.setClaimedBy(nodeId);
+            qe.setClaimedAt(Instant.now());
             queueEntryRepository.save(qe);
-            log.debug("Polled execution {} from queue", qe.getExecutionId());
+            log.debug("Polled execution {} from queue (claimed by {})", qe.getExecutionId(), nodeId);
             return qe.getExecutionId();
         }
         return null;

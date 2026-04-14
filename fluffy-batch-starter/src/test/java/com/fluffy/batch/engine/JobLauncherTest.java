@@ -88,6 +88,18 @@ class JobLauncherTest {
     }
 
     @Test
+    void shouldSetOwnerNodeOnLaunch() {
+        JobRequest request = new JobRequest(null, null, "test-user");
+
+        Long executionId = jobLauncher.launch("sync-test-job", request);
+
+        JobExecution execution = executionRepository.findById(executionId).orElseThrow();
+        assertThat(execution.getOwnerNode()).isNotNull();
+        assertThat(execution.getOwnerNode()).isNotBlank();
+        assertThat(execution.getOwnerNode()).isEqualTo(jobLauncher.getNodeId());
+    }
+
+    @Test
     void shouldLaunchAsyncJob() throws InterruptedException {
         JobRequest request = new JobRequest(null, null, "test-user");
 
