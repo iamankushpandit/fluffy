@@ -32,7 +32,7 @@ See the [Backend Configuration Guide](docs/backends.md) for full details and mig
 |---|---|
 | `fluffy-batch-starter` | Core library — Spring Boot auto-configuration, job engine, REST API |
 | `fluffy-batch-example` | Example application demonstrating usage |
-| `fluffy-aggregator` | Standalone aggregator docs and example setup — multi-node React/MUI dashboard |
+| `fluffy-aggregator` | Standalone aggregator service — polls multiple Fluffy nodes and serves a unified React/MUI dashboard |
 
 ## When to Use Fluffy
 

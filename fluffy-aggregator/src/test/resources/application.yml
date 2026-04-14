@@ -1,0 +1,17 @@
+server:
+  port: 8084
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+fluffy:
+  aggregator:
+    nodes: []
+    poll-interval-seconds: 60
+    discovery-interval-seconds: 120
+
+logging:
+  level:
+    com.fluffy: WARN

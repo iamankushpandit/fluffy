@@ -213,6 +213,23 @@ if [ "$image_check" != "fluffy-batch-example" ]; then
 fi
 write_ok "Docker image built and verified"
 
+# Build the aggregator Docker image
+pushd fluffy-aggregator >/dev/null
+docker build -t fluffy-aggregator:latest .
+if [ $? -ne 0 ]; then
+    popd >/dev/null
+    write_fail "Aggregator Docker build failed."
+    exit 1
+fi
+popd >/dev/null
+
+image_check=$(docker images fluffy-aggregator:latest --format "{{.Repository}}" 2>/dev/null)
+if [ "$image_check" != "fluffy-aggregator" ]; then
+    write_fail "Aggregator Docker image not found after build."
+    exit 1
+fi
+write_ok "Aggregator Docker image built and verified"
+
 # ---------------------------------------------------------------------------
 # 6. Deploy to Kubernetes
 # ---------------------------------------------------------------------------
@@ -331,7 +348,7 @@ write_ok "Kafka instance is ready"
 
 # Deploy aggregator node (React/MUI multi-node dashboard)
 printf "  Deploying Fluffy Aggregator...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n $NAMESPACE
+kubectl apply -f fluffy-aggregator/k8s/app-aggregator.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "Aggregator manifest apply failed."
     exit 1

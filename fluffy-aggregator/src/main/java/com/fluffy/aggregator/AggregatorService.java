@@ -1,8 +1,8 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
-import com.fluffy.batch.api.NodeSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -11,9 +11,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Polls every discovered node's {@code /api/jobs/summary} endpoint and
+ * Polls every discovered Fluffy node's {@code /api/jobs/summary} endpoint and
  * caches the latest per-node and aggregated results.
  */
+@Service
 public class AggregatorService {
 
     private static final Logger log = LoggerFactory.getLogger(AggregatorService.class);

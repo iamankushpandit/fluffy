@@ -1,6 +1,8 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -8,21 +10,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Configuration properties for the multi-node aggregator layer.
- * <p>
- * Set {@code fluffy.batch.aggregator.enabled=true} to activate the aggregator.
- * Provide node base URLs via {@code fluffy.batch.aggregator.nodes}.
+ * Configuration properties for the Fluffy Aggregator service.
+ *
+ * <pre>
+ * fluffy:
+ *   aggregator:
+ *     nodes:
+ *       - http://node1:8080
+ *       - http://node2:8080
+ *     poll-interval-seconds: 10
+ *     discovery-interval-seconds: 30
+ *     dashboard-path: /fluffy-aggregator
+ * </pre>
  */
-@ConfigurationProperties(prefix = "fluffy.batch.aggregator")
+@Component
+@ConfigurationProperties(prefix = "fluffy.aggregator")
 public class AggregatorProperties {
-
-    /** Whether the aggregator feature is active. */
-    private boolean enabled = false;
 
     /** Title displayed in the aggregator dashboard UI. */
     private String title = "Fluffy Aggregator Dashboard";
 
-    /** Static list of node base URLs (e.g. http://node1:8080). */
+    /** Static list of Fluffy node base URLs (e.g. http://node1:8080). */
     private List<String> nodes = new ArrayList<>();
 
     /** Interval in seconds between node discovery refreshes. */
@@ -31,20 +39,18 @@ public class AggregatorProperties {
     /** Interval in seconds between polling node summaries. */
     private int pollIntervalSeconds = 10;
 
-    /** Path to the aggregator React dashboard UI. */
+    /** URL path for the aggregator React dashboard UI. */
     private String dashboardPath = "/fluffy-aggregator";
 
-    /** Map of internal node base URL to external base URL for browser access. */
+    /** Map of internal node base URL to external base URL for browser link rewriting. */
     private Map<String, String> externalBaseUrls = new LinkedHashMap<>();
 
     /**
-     * Comma-separated list of internal=external URL pairs for dashboard link rewriting.
-     * Example: http://svc1:8080=http://localhost:8080,http://svc2:8080=http://localhost:8081
+     * Comma-separated list of {@code internal=external} URL pairs for dashboard link
+     * rewriting. Example:
+     * {@code http://svc1:8080=http://localhost:8080,http://svc2:8080=http://localhost:8081}
      */
     private String externalUrlMappings = "";
-
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -53,14 +59,10 @@ public class AggregatorProperties {
     public void setNodes(List<String> nodes) { this.nodes = nodes; }
 
     public int getDiscoveryIntervalSeconds() { return discoveryIntervalSeconds; }
-    public void setDiscoveryIntervalSeconds(int discoveryIntervalSeconds) {
-        this.discoveryIntervalSeconds = discoveryIntervalSeconds;
-    }
+    public void setDiscoveryIntervalSeconds(int v) { this.discoveryIntervalSeconds = v; }
 
     public int getPollIntervalSeconds() { return pollIntervalSeconds; }
-    public void setPollIntervalSeconds(int pollIntervalSeconds) {
-        this.pollIntervalSeconds = pollIntervalSeconds;
-    }
+    public void setPollIntervalSeconds(int v) { this.pollIntervalSeconds = v; }
 
     public String getDashboardPath() { return dashboardPath; }
     public void setDashboardPath(String dashboardPath) { this.dashboardPath = dashboardPath; }

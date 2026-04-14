@@ -1,6 +1,5 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
-import com.fluffy.batch.api.NodeSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -92,7 +91,7 @@ class AggregatorServiceTest {
 
     @Test
     void shouldReplaceOldSummariesOnRePoll() {
-        NodeSummary first = new NodeSummary("n1", 1, 0, 0, 0, false, null);
+        NodeSummary first  = new NodeSummary("n1", 1, 0, 0, 0, false, null);
         NodeSummary second = new NodeSummary("n1", 0, 1, 0, 0, false, null);
 
         when(discoveryService.getNodes()).thenReturn(List.of("http://n1"));

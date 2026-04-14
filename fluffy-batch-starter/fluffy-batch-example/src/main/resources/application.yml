@@ -28,15 +28,6 @@ fluffy:
       title: Fluffy Batch Dashboard
     metrics:
       enabled: true
-    aggregator:
-      enabled: false
-      title: Fluffy Aggregator Dashboard
-      # To enable the aggregator, set enabled: true and list node URLs:
-      # nodes:
-      #   - http://localhost:8081
-      #   - http://localhost:8082
-      # poll-interval-seconds: 10
-      # discovery-interval-seconds: 30
 
 management:
   endpoints:

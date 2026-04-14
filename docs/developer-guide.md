@@ -223,7 +223,7 @@ The script:
 | Per-node (H2) | `<minikube-ip>:30081/fluffy-dashboard` | Job dashboard for the H2 instance |
 | Per-node (DB) | `<minikube-ip>:30082/fluffy-dashboard` | Job dashboard for the database instance |
 | Per-node (Kafka) | `<minikube-ip>:30083/fluffy-dashboard` | Job dashboard for the Kafka instance |
-| Aggregator | `<minikube-ip>:30084/fluffy-aggregator` | Multi-node React/MUI view across all nodes |
+| Aggregator | `<minikube-ip>:30084/fluffy-aggregator` | Multi-node React/MUI view across all nodes (standalone `fluffy-aggregator` service) |
 | Minikube K8s | printed by script | Kubernetes control-plane dashboard |
 
 ---
@@ -270,7 +270,7 @@ curl -X POST http://localhost:8080/api/jobs/executions/1/retry
 
 ## 10. Configuration Quick-Reference
 
-All Fluffy properties live under the `fluffy.batch` namespace in
+All Fluffy batch properties live under the `fluffy.batch` namespace in
 `application.yml`:
 
 ```yaml
@@ -281,17 +281,26 @@ fluffy:
     dashboard:
       enabled: true
       title: "My Dashboard"
-    aggregator:
-      enabled: false
-      nodes:
-        - http://node1:8080
-        - http://node2:8080
     recovery:
       enabled: false
     metrics:
       enabled: true
     scaling:
       max-queue-depth: 100
+```
+
+The **aggregator** is a separate `fluffy-aggregator` service with its own
+`application.yml` under the `fluffy.aggregator` namespace:
+
+```yaml
+fluffy:
+  aggregator:
+    nodes:
+      - http://node1:8080
+      - http://node2:8080
+    poll-interval-seconds: 10
+    discovery-interval-seconds: 30
+    title: "My Aggregator Dashboard"
 ```
 
 See individual doc pages for deep-dives:

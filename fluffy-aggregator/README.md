@@ -1,231 +1,183 @@
-# Fluffy Aggregator
+# Fluffy Aggregator Service
 
-The **Fluffy Aggregator** is an optional layer built into `fluffy-batch-starter`
-that collects job metrics from multiple Fluffy nodes and presents a unified,
-React + Material-UI dashboard.
+A lightweight, standalone **Spring Boot service** that aggregates job metrics
+from multiple [Fluffy](https://github.com/iamankushpandit/fluffy) nodes and
+presents them in a single React + Material-UI dashboard.
 
-It is **not** a separate application — it is a feature of the starter that you
-enable with a single configuration property.  Any Fluffy node can act as the
-aggregator alongside its own job processing, or you can run a dedicated
-aggregator-only pod.
+---
+
+## Why a Standalone Service?
+
+The aggregator has a fundamentally different role from the batch nodes:
+
+- Batch nodes **process jobs** — they run `fluffy-batch-starter`.
+- The aggregator **observes nodes** — it polls them, merges results, and serves
+  a unified dashboard.
+
+Because these responsibilities are distinct, the aggregator is its own
+deployable unit with its own `Dockerfile`, Kubernetes manifests, Maven module,
+and configuration namespace (`fluffy.aggregator.*`).
 
 ---
 
 ## How It Works
 
 ```
-┌─────────────────────────┐
-│     Aggregator Node     │
-│  (any Fluffy instance)  │──▶ polls GET /api/jobs/summary
-│                         │
-│  /api/aggregator/*      │         ┌──────────┐  ┌──────────┐  ┌──────────┐
-│  /fluffy-aggregator     │         │  Node 1  │  │  Node 2  │  │  Node N  │
-└─────────────────────────┘         └──────────┘  └──────────┘  └──────────┘
+┌──────────────────────────┐
+│   fluffy-aggregator      │
+│   (standalone service)   │──▶ GET /api/jobs/summary
+│                          │         │
+│   Port 8084 by default   │         ▼
+│   /api/aggregator/*      │   ┌──────────┐  ┌──────────┐  ┌──────────┐
+│   /fluffy-aggregator     │   │  Node 1  │  │  Node 2  │  │  Node N  │
+└──────────────────────────┘   └──────────┘  └──────────┘  └──────────┘
 ```
 
-Every Fluffy node automatically exposes `GET /api/jobs/summary`.  The
-aggregator periodically polls that endpoint on every configured node, merges
-the results, and serves a React dashboard at `/fluffy-aggregator`.
+Every Fluffy batch node automatically exposes `GET /api/jobs/summary`.
+The aggregator polls each configured node, caches the results, and serves:
+
+- `GET /api/aggregator/summary` — aggregated + per-node breakdown
+- `GET /api/aggregator/nodes` — per-node summaries
+- `GET /api/aggregator/refresh` — force immediate re-poll
+- `GET /api/aggregator/config` — current configuration (used by the UI)
+- `/fluffy-aggregator/` — React + MUI dashboard
 
 ---
 
-## Enabling the Aggregator
+## Quick Start
 
-Add the following to `application.yml` (or the equivalent environment
-variables):
-
-```yaml
-fluffy:
-  batch:
-    aggregator:
-      enabled: true
-      title: "My Aggregator Dashboard"   # optional, defaults to 'Fluffy Aggregator Dashboard'
-      nodes:
-        - http://node1:8080
-        - http://node2:8080
-      poll-interval-seconds: 10          # how often to poll nodes (default: 10)
-      discovery-interval-seconds: 30     # how often to refresh the node list (default: 30)
-```
-
-Equivalent environment variables:
-
-```
-FLUFFY_BATCH_AGGREGATOR_ENABLED=true
-FLUFFY_BATCH_AGGREGATOR_NODES_0_=http://node1:8080
-FLUFFY_BATCH_AGGREGATOR_NODES_1_=http://node2:8080
-FLUFFY_BATCH_AGGREGATOR_POLL_INTERVAL_SECONDS=10
-```
-
----
-
-## REST API
-
-| Endpoint | Description |
-|---|---|
-| `GET /api/aggregator/summary` | Aggregated metrics + per-node breakdown |
-| `GET /api/aggregator/nodes` | Per-node summaries only |
-| `GET /api/aggregator/refresh` | Trigger an immediate re-poll, return summary |
-| `GET /api/aggregator/config` | Current aggregator configuration |
-
-### Example — `/api/aggregator/summary`
-
-```json
-{
-  "totalQueued": 8,
-  "totalRunning": 6,
-  "totalSucceeded": 240,
-  "totalFailed": 4,
-  "nodeSummaries": [
-    {
-      "nodeId": "node-1",
-      "queued": 5, "running": 3, "succeeded": 120, "failed": 2,
-      "dashboardAvailable": true,
-      "dashboardUrl": "http://node1:8080/fluffy-dashboard"
-    },
-    {
-      "nodeId": "node-2",
-      "queued": 3, "running": 3, "succeeded": 120, "failed": 2,
-      "dashboardAvailable": false,
-      "dashboardUrl": null
-    }
-  ]
-}
-```
-
----
-
-## Dashboard UI
-
-Access the React + MUI dashboard at:
-
-```
-http://<aggregator-host>:<port>/fluffy-aggregator
-```
-
-**Features:**
-- Aggregated metric cards (queued, running, succeeded, failed) across all nodes.
-- Per-node breakdown table with live status.
-- "Open" buttons linking directly to each node's own Fluffy dashboard.
-- Auto-refresh on the configured poll interval.
-- Manual refresh button for immediate re-poll.
-
-The UI ships as a single HTML page (`fluffy-aggregator/index.html`) plus a
-vanilla-JS file.  No build step is required.
-
----
-
-## Running Locally (Development)
-
-The simplest way to see the aggregator in action is to run two instances of the
-example app on different ports, then enable the aggregator on a third:
+### Build
 
 ```bash
-# Terminal 1 — Node 1
+# From the repository root:
+mvn clean package -pl fluffy-aggregator -DskipTests
+```
+
+### Run
+
+```bash
+cd fluffy-aggregator
+java -jar target/fluffy-aggregator-*.jar \
+  --fluffy.aggregator.nodes=http://localhost:8081,http://localhost:8082
+```
+
+Open the dashboard: `http://localhost:8084/fluffy-aggregator`
+
+### Development (with live Fluffy nodes)
+
+```bash
+# Terminal 1 — Fluffy node 1
 cd fluffy-batch-starter/fluffy-batch-example
 SERVER_PORT=8081 mvn spring-boot:run
 
-# Terminal 2 — Node 2
+# Terminal 2 — Fluffy node 2
 SERVER_PORT=8082 mvn spring-boot:run
 
 # Terminal 3 — Aggregator
-SERVER_PORT=8080 mvn spring-boot:run \
-  --fluffy.batch.aggregator.enabled=true \
-  --fluffy.batch.aggregator.nodes=http://localhost:8081,http://localhost:8082
+cd fluffy-aggregator
+mvn spring-boot:run \
+  --spring-boot.run.arguments="--fluffy.aggregator.nodes=http://localhost:8081,http://localhost:8082"
 ```
-
-Then open `http://localhost:8080/fluffy-aggregator`.
 
 ---
 
-## Kubernetes Deployment
+## Configuration
 
-The example Kubernetes manifest for the aggregator pod is located at:
-
-```
-fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml
-```
-
-It runs the same `fluffy-batch-example` Docker image with the aggregator
-enabled via environment variables:
+`src/main/resources/application.yml`:
 
 ```yaml
-env:
-  - name: FLUFFY_BATCH_AGGREGATOR_ENABLED
-    value: "true"
-  - name: FLUFFY_BATCH_AGGREGATOR_NODES_0_
-    value: "http://fluffy-batch-example:8080"
-  - name: FLUFFY_BATCH_AGGREGATOR_NODES_1_
-    value: "http://fluffy-batch-h2:8080"
-  - name: FLUFFY_BATCH_AGGREGATOR_NODES_2_
-    value: "http://fluffy-batch-db:8080"
-  - name: FLUFFY_BATCH_AGGREGATOR_NODES_3_
-    value: "http://fluffy-batch-kafka:8080"
+server:
+  port: 8084
+
+fluffy:
+  aggregator:
+    nodes:
+      - http://node1:8080
+      - http://node2:8080
+    poll-interval-seconds: 10
+    discovery-interval-seconds: 30
+    title: "My Aggregator Dashboard"
+    # Rewrite internal K8s URLs to browser-accessible URLs for dashboard links:
+    # external-url-mappings: "http://svc1:8080=http://localhost:8081,http://svc2:8080=http://localhost:8082"
 ```
 
-The setup scripts (`setup-and-deploy.sh` / `setup-and-deploy.ps1`) deploy this
-manifest automatically as part of the full example deployment.  The aggregator
-is accessible on NodePort **30084** after deployment:
-
-```
-http://<minikube-ip>:30084/fluffy-aggregator
-```
-
-### Using a Dedicated Aggregator Pod
-
-To run the aggregator as a completely separate pod (no job processing on that
-node), set `fluffy.batch.dashboard.enabled=false` in addition to enabling the
-aggregator.  This makes the pod purely an aggregation/display layer.
-
----
-
-## Configuration Reference
+### Full Property Reference
 
 | Property | Default | Description |
 |---|---|---|
-| `fluffy.batch.aggregator.enabled` | `false` | Enable the aggregator |
-| `fluffy.batch.aggregator.title` | `"Fluffy Aggregator Dashboard"` | Dashboard title |
-| `fluffy.batch.aggregator.nodes` | `[]` | Static list of Fluffy node base URLs |
-| `fluffy.batch.aggregator.poll-interval-seconds` | `10` | Node polling frequency |
-| `fluffy.batch.aggregator.discovery-interval-seconds` | `30` | Node list refresh frequency |
-| `fluffy.batch.aggregator.dashboard-path` | `/fluffy-aggregator` | URL path for the dashboard |
+| `fluffy.aggregator.nodes` | `[]` | List of Fluffy node base URLs |
+| `fluffy.aggregator.poll-interval-seconds` | `10` | Polling frequency |
+| `fluffy.aggregator.discovery-interval-seconds` | `30` | Node list refresh frequency |
+| `fluffy.aggregator.title` | `"Fluffy Aggregator Dashboard"` | Dashboard title |
+| `fluffy.aggregator.dashboard-path` | `/fluffy-aggregator` | Dashboard URL path |
+| `fluffy.aggregator.external-url-mappings` | `""` | `internal=external` URL pairs |
 
 ---
 
-## Source Code Location
+## Docker
 
-The aggregator implementation lives inside `fluffy-batch-starter` because it is
-an auto-configured feature of the starter library:
+```bash
+# Build
+cd fluffy-aggregator
+docker build -t fluffy-aggregator:latest .
 
-```
-fluffy-batch-starter/src/main/java/com/fluffy/batch/aggregator/
-  AggregatorAutoConfiguration.java   ← @ConditionalOnProperty wiring
-  AggregatorController.java          ← REST endpoints
-  AggregatorService.java             ← polling & aggregation logic
-  NodeDiscoveryService.java          ← node list management
-  AggregatorProperties.java          ← configuration properties
-  AggregatedSummary.java             ← response record
-  AggregatorDashboardRedirect.java   ← redirects /fluffy-aggregator → index.html
-
-fluffy-batch-starter/src/main/resources/static/fluffy-aggregator/
-  index.html                         ← React/MUI entry point
-  js/aggregator-app.js               ← all UI logic (no build step)
+# Run
+docker run -p 8084:8084 \
+  -e FLUFFY_AGGREGATOR_NODES_0_=http://node1:8080 \
+  -e FLUFFY_AGGREGATOR_NODES_1_=http://node2:8080 \
+  fluffy-aggregator:latest
 ```
 
 ---
 
-## Limitations
+## Kubernetes
 
-- **Static node list** — nodes must be listed in configuration.  Dynamic
-  service-registry discovery is a planned enhancement.
-- **Eventual consistency** — the aggregated view lags real time by up to
-  `poll-interval-seconds`.
-- **Single aggregator** — no built-in HA.  Use a Kubernetes Deployment with
-  replicas + a load balancer for resilience.
+The `k8s/app-aggregator.yaml` manifest deploys the aggregator in the
+`fluffy-example-1` namespace and exposes it on NodePort **30084**.
+
+```bash
+kubectl apply -f fluffy-aggregator/k8s/app-aggregator.yaml -n fluffy-example-1
+```
+
+The setup scripts (`setup-and-deploy.sh` / `setup-and-deploy.ps1`) build the
+Docker image and apply this manifest automatically.
+
+---
+
+## Module Structure
+
+```
+fluffy-aggregator/
+  pom.xml                         ← Maven module (Spring Boot app)
+  Dockerfile                      ← Container image definition
+  README.md                       ← This file
+  k8s/
+    app-aggregator.yaml           ← Kubernetes Deployment + Service
+  src/
+    main/
+      java/com/fluffy/aggregator/
+        FluffyAggregatorApplication.java
+        AggregatorController.java ← REST API
+        AggregatorService.java    ← Polling & aggregation logic
+        NodeDiscoveryService.java ← Node list management
+        AggregatorProperties.java ← Configuration properties
+        AggregatorScheduler.java  ← @Scheduled polling & discovery
+        AggregatorWebConfig.java  ← RestClient, redirect filter, resource handler
+        AggregatedSummary.java    ← Aggregated response record
+        NodeSummary.java          ← Per-node response record (mirrors Fluffy API)
+      resources/
+        application.yml
+        static/fluffy-aggregator/ ← React + MUI dashboard (no build step)
+          index.html
+          js/aggregator-app.js
+    test/
+      java/com/fluffy/aggregator/ ← Unit + integration tests (90% coverage)
+```
 
 ---
 
 ## Further Reading
 
 - [Aggregator deep-dive](../docs/aggregator.md)
-- [Dashboard feature](../docs/dashboard.md)
 - [Architecture overview](../docs/architecture.md)
+- [Developer Guide](../docs/developer-guide.md)

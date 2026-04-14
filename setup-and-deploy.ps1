@@ -320,9 +320,24 @@ if ($imageCheck -ne "fluffy-batch-example") {
 }
 Write-OK "Docker image built and verified"
 
-# ---------------------------------------------------------------------------
-# 6. Deploy to Kubernetes
-# ---------------------------------------------------------------------------
+# Build the aggregator Docker image
+Push-Location fluffy-aggregator
+try {
+    & docker build -t fluffy-aggregator:latest .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  [FAIL] Aggregator Docker build failed." -ForegroundColor Red
+        exit 1
+    }
+} finally {
+    Pop-Location
+}
+
+$aggregatorImageCheck = Invoke-Native docker images fluffy-aggregator:latest --format "{{.Repository}}"
+if ($aggregatorImageCheck -ne "fluffy-aggregator") {
+    Write-Host "  [FAIL] Aggregator Docker image not found after build." -ForegroundColor Red
+    exit 1
+}
+Write-OK "Aggregator Docker image built and verified"
 
 Write-Step "Deploying to Kubernetes (namespace: $Namespace)"
 
@@ -444,7 +459,7 @@ Write-OK "Kafka instance is ready"
 # Deploy aggregator node (React/MUI multi-node dashboard)
 Write-Host ""
 Write-Host "  [Aggregator] Deploying aggregator dashboard..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n $Namespace
+& kubectl apply -f fluffy-aggregator/k8s/app-aggregator.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] Aggregator deploy failed" -ForegroundColor Red; exit 1 }
 Write-OK "Aggregator deployment applied"
 Write-Host "  Waiting for aggregator rollout..."
@@ -481,7 +496,7 @@ if ($usePortForward) {
     Start-Job -Name "fluffy-pf-h2"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-h2      8081:8080 -n $ns } -ArgumentList $Namespace | Out-Null
     Start-Job -Name "fluffy-pf-db"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-db      8082:8080 -n $ns } -ArgumentList $Namespace | Out-Null
     Start-Job -Name "fluffy-pf-kafka"   -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-kafka   8083:8080 -n $ns } -ArgumentList $Namespace | Out-Null
-    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-aggregator    8084:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-aggregator    8084:8084 -n $ns } -ArgumentList $Namespace | Out-Null
 
     # Give port-forwards a moment to start
     Start-Sleep -Seconds 2
