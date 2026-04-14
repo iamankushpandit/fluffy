@@ -28,7 +28,7 @@ public interface QueueEntryRepository extends JpaRepository<QueueEntry, Long> {
      * {@code SKIP LOCKED} semantics so that concurrent nodes never claim the same row.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    // Value "-2" maps to LockOption.SKIP_LOCKED per the Jakarta Persistence specification,
+    // Value "-2" is a Hibernate-specific hint that activates SKIP LOCKED behavior,
     // causing the query to skip rows already locked by other transactions instead of blocking.
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("SELECT q FROM QueueEntry q WHERE q.status = :status ORDER BY q.id ASC LIMIT 1")
