@@ -44,6 +44,7 @@ public class JobRegistry implements ApplicationContextAware, InitializingBean {
                             .async(annotation.async())
                             .timeoutSeconds(annotation.timeoutSeconds())
                             .requiredParams(annotation.requiredParams())
+                            .executionMode(annotation.executionMode())
                             .handler(handler)
                             .build();
                     if (!registry.containsKey(def.name())) {

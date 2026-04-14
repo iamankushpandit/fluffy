@@ -1,5 +1,6 @@
 package com.fluffy.batch.annotation;
 
+import com.fluffy.batch.engine.ExecutionMode;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.*;
@@ -15,4 +16,13 @@ public @interface BatchJob {
     boolean async() default true;
     long timeoutSeconds() default 0;
     String[] requiredParams() default {};
+
+    /**
+     * Determines where the job is executed.
+     * <ul>
+     *   <li>{@code LOCAL} — runs in-process (default)</li>
+     *   <li>{@code CLOUD_NATIVE} — dispatched to an external orchestrator</li>
+     * </ul>
+     */
+    ExecutionMode executionMode() default ExecutionMode.LOCAL;
 }

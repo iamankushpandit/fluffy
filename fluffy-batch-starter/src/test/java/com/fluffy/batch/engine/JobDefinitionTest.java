@@ -69,14 +69,15 @@ class JobDefinitionTest {
 
     @Test
     void shouldDefaultNullRequiredParamsToEmpty() {
-        JobDefinition def = new JobDefinition("test", "", 1, true, 0, null, ctx -> {});
+        JobDefinition def = new JobDefinition("test", "", 1, true, 0, null, ctx -> {}, null);
         assertThat(def.requiredParams()).isNotNull().isEmpty();
+        assertThat(def.executionMode()).isEqualTo(ExecutionMode.LOCAL);
     }
 
     @Test
     void shouldCreateViaRecordConstructor() {
         String[] params = {"p1"};
-        JobDefinition def = new JobDefinition("direct-job", "desc", 2, false, 30, params, ctx -> {});
+        JobDefinition def = new JobDefinition("direct-job", "desc", 2, false, 30, params, ctx -> {}, ExecutionMode.CLOUD_NATIVE);
 
         assertThat(def.name()).isEqualTo("direct-job");
         assertThat(def.description()).isEqualTo("desc");
@@ -84,5 +85,25 @@ class JobDefinitionTest {
         assertThat(def.async()).isFalse();
         assertThat(def.timeoutSeconds()).isEqualTo(30);
         assertThat(def.requiredParams()).containsExactly("p1");
+        assertThat(def.executionMode()).isEqualTo(ExecutionMode.CLOUD_NATIVE);
+    }
+
+    @Test
+    void shouldBuildWithExecutionMode() {
+        JobDefinition def = JobDefinition.builder("cloud-job")
+                .handler(ctx -> {})
+                .executionMode(ExecutionMode.CLOUD_NATIVE)
+                .build();
+
+        assertThat(def.executionMode()).isEqualTo(ExecutionMode.CLOUD_NATIVE);
+    }
+
+    @Test
+    void shouldDefaultExecutionModeToLocal() {
+        JobDefinition def = JobDefinition.builder("local-job")
+                .handler(ctx -> {})
+                .build();
+
+        assertThat(def.executionMode()).isEqualTo(ExecutionMode.LOCAL);
     }
 }

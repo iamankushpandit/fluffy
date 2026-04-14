@@ -90,6 +90,7 @@ public class JobController {
                     info.put("async", def.async());
                     info.put("timeoutSeconds", def.timeoutSeconds());
                     info.put("requiredParams", def.requiredParams());
+                    info.put("executionMode", def.executionMode().name());
                     return info;
                 })
                 .toList();

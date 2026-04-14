@@ -1,11 +1,13 @@
 package com.fluffy.batch.autoconfigure;
 
-import com.fluffy.batch.backend.BackendType;
 import com.fluffy.batch.backend.CoordinationBackend;
 import com.fluffy.batch.backend.QueueBackend;
 import com.fluffy.batch.engine.ConcurrencyManager;
+import com.fluffy.batch.engine.DefaultExecutionCallback;
+import com.fluffy.batch.engine.ExecutionCallback;
 import com.fluffy.batch.engine.JobLauncher;
 import com.fluffy.batch.engine.JobRegistry;
+import com.fluffy.batch.persistence.JobExecutionRepository;
 import com.fluffy.batch.persistence.JobQueueManager;
 import com.fluffy.batch.web.GlobalExceptionHandler;
 import com.fluffy.batch.web.JobController;
@@ -70,6 +72,14 @@ public class BatchJobAutoConfiguration {
     @ConditionalOnMissingBean(name = "jobScheduledExecutorService")
     public ScheduledExecutorService jobScheduledExecutorService() {
         return Executors.newScheduledThreadPool(4);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ExecutionCallback.class)
+    public DefaultExecutionCallback executionCallback(
+            JobExecutionRepository executionRepository,
+            CoordinationBackend coordinationBackend) {
+        return new DefaultExecutionCallback(executionRepository, coordinationBackend);
     }
 }
 

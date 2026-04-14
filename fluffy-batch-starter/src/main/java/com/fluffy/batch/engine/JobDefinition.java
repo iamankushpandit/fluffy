@@ -4,7 +4,7 @@ import com.fluffy.batch.api.JobHandler;
 
 /**
  * Immutable definition of a batch job: its name, concurrency limits, timeout,
- * required parameters, and the handler that executes the work.
+ * required parameters, execution mode, and the handler that executes the work.
  */
 public record JobDefinition(
         String name,
@@ -13,7 +13,8 @@ public record JobDefinition(
         boolean async,
         long timeoutSeconds,
         String[] requiredParams,
-        JobHandler handler
+        JobHandler handler,
+        ExecutionMode executionMode
 ) {
     /** Validates invariants. */
     public JobDefinition {
@@ -25,6 +26,9 @@ public record JobDefinition(
         }
         if (requiredParams == null) {
             requiredParams = new String[0];
+        }
+        if (executionMode == null) {
+            executionMode = ExecutionMode.LOCAL;
         }
     }
 
@@ -40,6 +44,7 @@ public record JobDefinition(
         private long timeoutSeconds = 0;
         private String[] requiredParams = new String[0];
         private JobHandler handler;
+        private ExecutionMode executionMode = ExecutionMode.LOCAL;
 
         public Builder(String name) {
             this.name = name;
@@ -75,9 +80,14 @@ public record JobDefinition(
             return this;
         }
 
+        public Builder executionMode(ExecutionMode executionMode) {
+            this.executionMode = executionMode;
+            return this;
+        }
+
         public JobDefinition build() {
             return new JobDefinition(name, description, maxConcurrency, async,
-                    timeoutSeconds, requiredParams, handler);
+                    timeoutSeconds, requiredParams, handler, executionMode);
         }
     }
 }
