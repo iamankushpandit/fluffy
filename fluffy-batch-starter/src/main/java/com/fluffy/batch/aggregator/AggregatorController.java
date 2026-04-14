@@ -1,6 +1,7 @@
 package com.fluffy.batch.aggregator;
 
 import com.fluffy.batch.api.NodeSummary;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -12,10 +13,12 @@ import java.util.Map;
 /**
  * REST endpoints consumed by the aggregator React dashboard.
  * <p>
- * Not annotated with {@code @RestController} so that component scanning does
- * not create the bean when the aggregator is disabled.  Registration is handled
- * by {@link AggregatorAutoConfiguration}.
+ * Annotated with {@code @Controller} (not {@code @RestController}) so that
+ * handler detection works in Spring 6.2+.  The class is NOT in a
+ * component-scanned package; bean registration is handled by
+ * {@link AggregatorAutoConfiguration} (conditional on property).
  */
+@Controller
 @RequestMapping("/api/aggregator")
 @ResponseBody
 public class AggregatorController {
@@ -59,6 +62,10 @@ public class AggregatorController {
         config.put("pollIntervalSeconds", properties.getPollIntervalSeconds());
         config.put("discoveryIntervalSeconds", properties.getDiscoveryIntervalSeconds());
         config.put("nodeCount", discoveryService.getNodes().size());
+        Map<String, String> extUrls = properties.resolveExternalBaseUrls();
+        if (!extUrls.isEmpty()) {
+            config.put("externalBaseUrls", extUrls);
+        }
         return config;
     }
 }

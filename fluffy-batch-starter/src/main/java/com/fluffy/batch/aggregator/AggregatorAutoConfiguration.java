@@ -7,7 +7,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.core.Ordered;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -50,6 +53,30 @@ public class AggregatorAutoConfiguration {
                                                    NodeDiscoveryService discoveryService,
                                                    AggregatorProperties properties) {
         return new AggregatorScheduler(aggregatorService, discoveryService, properties);
+    }
+
+    @Bean
+    public FilterRegistrationBean<OncePerRequestFilter> aggregatorDashboardRedirectFilter(
+            AggregatorProperties properties) {
+        String path = normalizePath(properties.getDashboardPath());
+        FilterRegistrationBean<OncePerRequestFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+                    jakarta.servlet.http.HttpServletResponse response,
+                    jakarta.servlet.FilterChain filterChain)
+                    throws jakarta.servlet.ServletException, java.io.IOException {
+                String uri = request.getRequestURI();
+                if (uri.equals(path) || uri.equals(path + "/")) {
+                    response.sendRedirect(path + "/index.html");
+                    return;
+                }
+                filterChain.doFilter(request, response);
+            }
+        });
+        reg.addUrlPatterns(path, path + "/");
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return reg;
     }
 
     @Bean

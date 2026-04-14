@@ -40,6 +40,8 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=96m -Xss512k"
             - name: SPRING_PROFILES_ACTIVE
               value: "database"
             - name: POSTGRES_HOST
@@ -61,25 +63,30 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
+          startupProbe:
+            httpGet:
+              path: /api/jobs/registered
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /api/jobs/registered
               port: 8080
-            initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/jobs/registered
               port: 8080
-            initialDelaySeconds: 30
             periodSeconds: 15
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "320Mi"
+              cpu: "200m"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "640Mi"
+              cpu: "1000m"
 ---
 apiVersion: v1
 kind: Service

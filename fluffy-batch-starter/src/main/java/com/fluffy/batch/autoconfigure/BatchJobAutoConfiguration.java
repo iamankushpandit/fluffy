@@ -9,6 +9,7 @@ import com.fluffy.batch.engine.JobRegistry;
 import com.fluffy.batch.persistence.JobQueueManager;
 import com.fluffy.batch.web.GlobalExceptionHandler;
 import com.fluffy.batch.web.JobController;
+import com.fluffy.batch.web.NodeSummaryController;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -29,7 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 @EntityScan(basePackages = "com.fluffy.batch.model")
 @EnableConfigurationProperties(BackendProperties.class)
 @Import({JobRegistry.class, JobLauncher.class,
-         JobController.class, GlobalExceptionHandler.class})
+         JobController.class, NodeSummaryController.class, GlobalExceptionHandler.class})
 public class BatchJobAutoConfiguration {
 
     /**

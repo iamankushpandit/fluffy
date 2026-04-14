@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -15,8 +16,9 @@ import java.util.NoSuchElementException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({JobNotFoundException.class, NoSuchElementException.class})
-    public ProblemDetail handleNotFound(RuntimeException ex) {
+    @ExceptionHandler({JobNotFoundException.class, NoSuchElementException.class,
+            NoResourceFoundException.class})
+    public ProblemDetail handleNotFound(Exception ex) {
         return buildProblemDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

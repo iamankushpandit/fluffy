@@ -29,6 +29,21 @@
     });
   }
 
+  /**
+   * Rewrites an internal dashboard URL using the externalBaseUrls mapping
+   * from /api/aggregator/config. Returns the original URL if no mapping exists.
+   */
+  function rewriteDashboardUrl(url, externalBaseUrls) {
+    if (!url || !externalBaseUrls) return url;
+    var keys = Object.keys(externalBaseUrls);
+    for (var i = 0; i < keys.length; i++) {
+      if (url.indexOf(keys[i]) === 0) {
+        return externalBaseUrls[keys[i]] + url.substring(keys[i].length);
+      }
+    }
+    return url;
+  }
+
   /* ── Summary Card ─────────────────────────────────────────────── */
   function SummaryCard(props) {
     return e(MUI.Card, { sx: { minWidth: 160, textAlign: 'center' } },
@@ -59,6 +74,7 @@
   /* ── Per-Node Table ───────────────────────────────────────────── */
   function NodeTable(props) {
     var nodes = (props.data && props.data.nodeSummaries) || [];
+    var extUrls = props.config && props.config.externalBaseUrls;
     if (nodes.length === 0) {
       return e(MUI.Typography, { sx: { mt: 2 }, color: 'text.secondary' },
         'No node data available. Ensure aggregator nodes are configured.');
@@ -88,7 +104,7 @@
                   ? e(MUI.Button, {
                       size: 'small',
                       variant: 'outlined',
-                      href: n.dashboardUrl,
+                      href: rewriteDashboardUrl(n.dashboardUrl, extUrls),
                       target: '_blank',
                       rel: 'noopener'
                     }, 'Open')
@@ -167,7 +183,7 @@
           e(AggregateCards, { data: data }),
           e(MUI.Divider, { sx: { my: 3 } }),
           e(MUI.Typography, { variant: 'h5', gutterBottom: true }, 'Per-Node Breakdown'),
-          e(NodeTable, { data: data })
+          e(NodeTable, { data: data, config: config })
         )
       )
     );
