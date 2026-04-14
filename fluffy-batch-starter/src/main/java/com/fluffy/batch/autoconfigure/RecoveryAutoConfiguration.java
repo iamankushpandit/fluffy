@@ -1,5 +1,6 @@
 package com.fluffy.batch.autoconfigure;
 
+import com.fluffy.batch.engine.NodeIdResolver;
 import com.fluffy.batch.engine.RecoveryManager;
 import com.fluffy.batch.persistence.JobExecutionRepository;
 import com.fluffy.batch.persistence.NodeHeartbeatRepository;
@@ -10,8 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-
-import java.net.InetAddress;
 
 /**
  * Auto-configuration for node heartbeat and recovery.
@@ -40,8 +39,7 @@ public class RecoveryAutoConfiguration implements SchedulingConfigurer {
 
     @Bean
     public RecoveryManager recoveryManager() {
-        String nodeId = resolveNodeId();
-        return new RecoveryManager(nodeId, properties, heartbeatRepository, executionRepository);
+        return new RecoveryManager(NodeIdResolver.getNodeId(), properties, heartbeatRepository, executionRepository);
     }
 
     @Override
@@ -52,14 +50,5 @@ public class RecoveryAutoConfiguration implements SchedulingConfigurer {
 
         taskRegistrar.addFixedRateTask(manager::sendHeartbeat, heartbeatMs);
         taskRegistrar.addFixedRateTask(manager::recoverStaleNodes, recoveryMs);
-    }
-
-    private String resolveNodeId() {
-        try {
-            String hostname = InetAddress.getLocalHost().getHostName();
-            return hostname != null ? hostname : "node-" + ProcessHandle.current().pid();
-        } catch (Exception e) {
-            return "node-" + ProcessHandle.current().pid();
-        }
     }
 }

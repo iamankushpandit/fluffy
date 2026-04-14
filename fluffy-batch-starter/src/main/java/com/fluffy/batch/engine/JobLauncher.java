@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.InetAddress;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +55,7 @@ public class JobLauncher {
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.objectMapper = objectMapper;
-        this.nodeId = resolveNodeId();
+        this.nodeId = NodeIdResolver.getNodeId();
     }
 
     /**
@@ -296,12 +295,4 @@ public class JobLauncher {
         });
     }
 
-    private static String resolveNodeId() {
-        try {
-            String hostname = InetAddress.getLocalHost().getHostName();
-            return hostname != null ? hostname : "node-" + ProcessHandle.current().pid();
-        } catch (Exception e) {
-            return "node-" + ProcessHandle.current().pid();
-        }
-    }
 }
