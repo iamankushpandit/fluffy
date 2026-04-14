@@ -12,9 +12,11 @@
 #   3. Starts Minikube if not already running.
 #   4. Builds the parent Maven project (fluffy-batch-starter + fluffy-batch-example).
 #   5. Builds the Docker image inside Minikube's Docker daemon.
-#   6. Deploys PostgreSQL and the example app to a dedicated Kubernetes namespace.
+#   6. Deploys PostgreSQL, all example app instances, and the aggregator to a
+#      dedicated Kubernetes namespace.
 #   7. Verifies every step before proceeding to the next.
 #   8. Prints the application URL including the dashboard link.
+#   9. Launches the Minikube dashboard and displays its URL.
 #
 # Usage:
 #   chmod +x setup-and-deploy.sh
@@ -327,6 +329,23 @@ if [ $? -ne 0 ]; then
 fi
 write_ok "Kafka instance is ready"
 
+# Deploy aggregator node (React/MUI multi-node dashboard)
+printf "  Deploying Fluffy Aggregator...\n"
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n $NAMESPACE
+if [ $? -ne 0 ]; then
+    write_fail "Aggregator manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for aggregator to be ready...\n"
+kubectl rollout status deployment/fluffy-aggregator -n $NAMESPACE --timeout=120s
+if [ $? -ne 0 ]; then
+    write_fail "Aggregator deployment did not become ready."
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-aggregator -n $NAMESPACE${NC}\n"
+    exit 1
+fi
+write_ok "Aggregator is ready"
+
 # Optionally apply HorizontalPodAutoscaler
 printf "  Applying HorizontalPodAutoscaler for DB instance...\n"
 kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n $NAMESPACE
@@ -355,17 +374,25 @@ printf "  ${WHITE}API Base        : %s/api/jobs${NC}\n" "$service_url"
 printf "  ${WHITE}Registered Jobs : %s/api/jobs/registered${NC}\n" "$service_url"
 printf "\n"
 printf "  ${WHITE}--- H2 instance (in-memory, no external DB) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30081/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30081${NC}\n" "$minikube_ip"
 printf "  ${WHITE}H2 Console      : http://%s:30081/h2-console${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30081/api/jobs${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${WHITE}--- Database instance (database profile) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30082/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30082${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30082/api/jobs${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${WHITE}--- Kafka instance (kafka profile) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30083/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30083${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30083/api/jobs${NC}\n" "$minikube_ip"
+printf "\n"
+printf "  ${CYAN}--- Aggregator Dashboard (multi-node React/MUI) ---${NC}\n"
+printf "  ${CYAN}Dashboard       : http://%s:30084/fluffy-aggregator${NC}\n" "$minikube_ip"
+printf "  ${CYAN}API Summary     : http://%s:30084/api/aggregator/summary${NC}\n" "$minikube_ip"
+printf "  ${CYAN}API Nodes       : http://%s:30084/api/aggregator/nodes${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${YELLOW}Useful commands:${NC}\n"
 printf "    kubectl get pods -n $NAMESPACE                                # Check pod status\n"
@@ -373,6 +400,7 @@ printf "    kubectl logs -l app=fluffy-batch-example -n $NAMESPACE        # View
 printf "    kubectl logs -l app=fluffy-batch-h2 -n $NAMESPACE             # View H2 instance logs\n"
 printf "    kubectl logs -l app=fluffy-batch-db -n $NAMESPACE             # View DB instance logs\n"
 printf "    kubectl logs -l app=fluffy-batch-kafka -n $NAMESPACE          # View Kafka instance logs\n"
+printf "    kubectl logs -l app=fluffy-aggregator -n $NAMESPACE           # View Aggregator logs\n"
 printf "    kubectl logs -l app=postgres -n $NAMESPACE                    # View PostgreSQL logs\n"
 printf "    kubectl logs -l app=kafka -n $NAMESPACE                       # View Kafka logs\n"
 printf "\n"
