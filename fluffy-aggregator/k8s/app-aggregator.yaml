@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fluffy-aggregator
-  namespace: fluffy-example-1
   labels:
     app: fluffy-aggregator
 spec:
@@ -18,64 +17,61 @@ spec:
     spec:
       containers:
         - name: fluffy-aggregator
-          image: fluffy-batch-example:latest
+          image: fluffy-aggregator:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=96m -Xss512k"
-            - name: FLUFFY_BATCH_AGGREGATOR_TITLE
+            - name: FLUFFY_AGGREGATOR_TITLE
               value: "Fluffy Example - Aggregator"
-            - name: FLUFFY_BATCH_AGGREGATOR_ENABLED
-              value: "true"
-            - name: FLUFFY_BATCH_AGGREGATOR_NODES_0_
+            - name: FLUFFY_AGGREGATOR_NODES_0_
               value: "http://fluffy-batch-example:8080"
-            - name: FLUFFY_BATCH_AGGREGATOR_NODES_1_
+            - name: FLUFFY_AGGREGATOR_NODES_1_
               value: "http://fluffy-batch-h2:8080"
-            - name: FLUFFY_BATCH_AGGREGATOR_NODES_2_
+            - name: FLUFFY_AGGREGATOR_NODES_2_
               value: "http://fluffy-batch-db:8080"
-            - name: FLUFFY_BATCH_AGGREGATOR_NODES_3_
+            - name: FLUFFY_AGGREGATOR_NODES_3_
               value: "http://fluffy-batch-kafka:8080"
-            - name: FLUFFY_BATCH_AGGREGATOR_POLL_INTERVAL_SECONDS
+            - name: FLUFFY_AGGREGATOR_POLL_INTERVAL_SECONDS
               value: "10"
-            - name: FLUFFY_BATCH_AGGREGATOR_EXTERNAL_URL_MAPPINGS
+            - name: FLUFFY_AGGREGATOR_EXTERNAL_URL_MAPPINGS
               value: "http://fluffy-batch-example:8080=http://localhost:8080,http://fluffy-batch-h2:8080=http://localhost:8081,http://fluffy-batch-db:8080=http://localhost:8082,http://fluffy-batch-kafka:8080=http://localhost:8083"
           startupProbe:
             httpGet:
               path: /api/aggregator/config
-              port: 8080
+              port: 8084
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /api/aggregator/config
-              port: 8080
+              port: 8084
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/aggregator/summary
-              port: 8080
+              port: 8084
             periodSeconds: 15
           resources:
             requests:
-              memory: "320Mi"
-              cpu: "200m"
+              memory: "128Mi"
+              cpu: "100m"
             limits:
-              memory: "640Mi"
-              cpu: "1000m"
+              memory: "256Mi"
+              cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: fluffy-aggregator
-  namespace: fluffy-example-1
 spec:
   selector:
     app: fluffy-aggregator
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8084
+      targetPort: 8084
       nodePort: 30084
   type: NodePort

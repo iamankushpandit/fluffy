@@ -170,7 +170,7 @@
       e(MUI.CssBaseline),
       e(MUI.AppBar, { position: 'static', sx: { mb: 3 } },
         e(MUI.Toolbar, null,
-          e('img', { src: '/fluffy.svg', alt: 'Fluffy', style: { width: 32, height: 32, marginRight: 12 } }),
+          e('img', { src: '/fluffy.svg', alt: 'Fluffy', style: { width: 48, height: 48, marginRight: 12 } }),
           e(MUI.Typography, { variant: 'h6', sx: { flexGrow: 1 } },
             (config && config.title) || 'Fluffy Aggregator Dashboard'),
           config && e(MUI.Chip, {

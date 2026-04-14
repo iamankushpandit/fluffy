@@ -13,6 +13,7 @@
     <modules>
         <module>fluffy-batch-starter</module>
         <module>fluffy-batch-starter/fluffy-batch-example</module>
+        <module>fluffy-aggregator</module>
     </modules>
 
     <properties>

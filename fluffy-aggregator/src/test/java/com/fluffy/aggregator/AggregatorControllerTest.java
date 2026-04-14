@@ -1,6 +1,5 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
-import com.fluffy.batch.api.NodeSummary;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -61,5 +60,24 @@ class AggregatorControllerTest {
         assertThat(config).containsEntry("pollIntervalSeconds", 15);
         assertThat(config).containsEntry("discoveryIntervalSeconds", 45);
         assertThat(config).containsEntry("nodeCount", 2);
+    }
+
+    @Test
+    void shouldIncludeExternalBaseUrlsInConfigWhenSet() {
+        properties.setExternalUrlMappings("http://svc1:8080=http://localhost:8080");
+        when(discoveryService.getNodes()).thenReturn(List.of());
+
+        Map<String, Object> config = controller.getConfig();
+
+        assertThat(config).containsKey("externalBaseUrls");
+    }
+
+    @Test
+    void shouldNotIncludeExternalBaseUrlsInConfigWhenEmpty() {
+        when(discoveryService.getNodes()).thenReturn(List.of());
+
+        Map<String, Object> config = controller.getConfig();
+
+        assertThat(config).doesNotContainKey("externalBaseUrls");
     }
 }

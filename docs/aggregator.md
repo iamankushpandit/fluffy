@@ -1,7 +1,235 @@
-# Aggregator Dashboard
+# Fluffy Aggregator Service
 
-Fluffy Batch Starter includes an optional **aggregator layer** that collects job
-metrics from multiple nodes and presents a unified, React-based dashboard.
+The **Fluffy Aggregator** is a **standalone Spring Boot service** that collects
+job metrics from multiple Fluffy nodes and presents a unified, React + Material-UI
+dashboard.  It lives in the `fluffy-aggregator/` module at the repository root and
+is deployed independently from the Fluffy batch nodes.
+
+## Architecture
+
+```
+┌──────────────────────────┐
+│   fluffy-aggregator      │
+│   (standalone service)   │──▶ GET /api/jobs/summary
+│                          │         │
+│   /api/aggregator/*      │         ▼
+│   /fluffy-aggregator     │   ┌──────────┐  ┌──────────┐  ┌──────────┐
+└──────────────────────────┘   │  Node 1  │  │  Node 2  │  │  Node N  │
+                               │ :8080    │  │ :8080    │  │ :8080    │
+                               └──────────┘  └──────────┘  └──────────┘
+```
+
+Each Fluffy node (running `fluffy-batch-starter`) automatically exposes
+`GET /api/jobs/summary` with job counts and dashboard availability.  The
+aggregator service polls that endpoint periodically, merges the results, and
+serves a React dashboard at `/fluffy-aggregator`.
+
+---
+
+## Configuring the Aggregator
+
+Edit `fluffy-aggregator/src/main/resources/application.yml` (or use environment
+variables when deploying to Kubernetes):
+
+```yaml
+fluffy:
+  aggregator:
+    nodes:
+      - http://node1:8080
+      - http://node2:8080
+    poll-interval-seconds: 10
+    discovery-interval-seconds: 30
+    title: "My Aggregator Dashboard"
+```
+
+Equivalent environment variables:
+
+```
+FLUFFY_AGGREGATOR_NODES_0_=http://node1:8080
+FLUFFY_AGGREGATOR_NODES_1_=http://node2:8080
+FLUFFY_AGGREGATOR_POLL_INTERVAL_SECONDS=10
+```
+
+---
+
+## Node Summary Endpoint
+
+Every Fluffy node automatically exposes:
+
+```
+GET /api/jobs/summary
+```
+
+### Response
+
+```json
+{
+  "nodeId": "fluffy-node-abc123",
+  "queued": 5,
+  "running": 3,
+  "succeeded": 120,
+  "failed": 2,
+  "dashboardAvailable": true,
+  "dashboardUrl": "http://node1:8080/fluffy-dashboard"
+}
+```
+
+| Field                | Description                                        |
+|----------------------|----------------------------------------------------|
+| `nodeId`             | Hostname or `fluffy.node.id` system property        |
+| `queued`             | Jobs in `STARTING` status                           |
+| `running`            | Jobs in `STARTED` status                            |
+| `succeeded`          | Jobs in `COMPLETED` status                          |
+| `failed`             | Jobs in `FAILED` status                             |
+| `dashboardAvailable` | `true` when the per-node dashboard is enabled        |
+| `dashboardUrl`       | Full URL to the per-node dashboard (or `null`)       |
+
+---
+
+## Aggregator REST API
+
+### `GET /api/aggregator/summary`
+
+Returns aggregated metrics plus per-node breakdowns.
+
+```json
+{
+  "totalQueued": 8,
+  "totalRunning": 6,
+  "totalSucceeded": 240,
+  "totalFailed": 4,
+  "nodeSummaries": [
+    { "nodeId": "node-1", "queued": 5, "running": 3, "succeeded": 120, "failed": 2, "dashboardAvailable": true, "dashboardUrl": "http://node1:8080/fluffy-dashboard" },
+    { "nodeId": "node-2", "queued": 3, "running": 3, "succeeded": 120, "failed": 2, "dashboardAvailable": false, "dashboardUrl": null }
+  ]
+}
+```
+
+### `GET /api/aggregator/nodes`
+
+Returns per-node summaries only (same as the `nodeSummaries` array above).
+
+### `GET /api/aggregator/refresh`
+
+Triggers an immediate node discovery refresh and poll, then returns the
+aggregated summary.
+
+### `GET /api/aggregator/config`
+
+Returns the current aggregator configuration (used by the React UI):
+
+```json
+{
+  "title": "My Aggregator Dashboard",
+  "pollIntervalSeconds": 10,
+  "discoveryIntervalSeconds": 30,
+  "nodeCount": 2
+}
+```
+
+---
+
+## Configuration Reference
+
+| Property | Default | Description |
+|---|---|---|
+| `fluffy.aggregator.nodes` | `[]` | Static list of Fluffy node base URLs |
+| `fluffy.aggregator.poll-interval-seconds` | `10` | Seconds between polling node summaries |
+| `fluffy.aggregator.discovery-interval-seconds` | `30` | Seconds between refreshing the node list |
+| `fluffy.aggregator.dashboard-path` | `/fluffy-aggregator` | URL path for the React dashboard |
+| `fluffy.aggregator.title` | `"Fluffy Aggregator Dashboard"` | Dashboard title shown in the UI |
+| `fluffy.aggregator.external-url-mappings` | `""` | Comma-separated `internal=external` pairs for dashboard link rewriting |
+
+---
+
+## React Dashboard
+
+Access the dashboard at:
+
+```
+http://aggregator-host:8084/fluffy-aggregator/index.html
+```
+
+### Features
+
+- **Aggregated metric cards** — total queued, running, succeeded, and failed
+  counts across all configured nodes.
+- **Per-node breakdown table** — individual node metrics with dashboard links.
+- **Auto-refresh** — the UI polls `/api/aggregator/summary` at the configured
+  poll interval.
+- **Manual refresh** — click the **Refresh** toolbar button for an immediate
+  re-poll.
+- **No build step required** — ships as a single HTML page + vanilla JS using
+  `React.createElement` calls, loaded via CDN.
+
+---
+
+## Running Locally (Development)
+
+**Step 1** — Start two Fluffy batch nodes on different ports:
+
+```bash
+# Node 1
+cd fluffy-batch-starter/fluffy-batch-example
+SERVER_PORT=8081 mvn spring-boot:run
+
+# Node 2 (in a second terminal)
+SERVER_PORT=8082 mvn spring-boot:run
+```
+
+**Step 2** — Run the aggregator service:
+
+```bash
+cd fluffy-aggregator
+mvn spring-boot:run \
+  --spring-boot.run.arguments="--fluffy.aggregator.nodes=http://localhost:8081,http://localhost:8082"
+```
+
+**Step 3** — Open the dashboard:
+
+```
+http://localhost:8084/fluffy-aggregator
+```
+
+---
+
+## Kubernetes Deployment
+
+The aggregator ships with a ready-to-use manifest in `fluffy-aggregator/k8s/app-aggregator.yaml`.
+It is deployed automatically by the setup scripts (`setup-and-deploy.sh` /
+`setup-and-deploy.ps1`) as a separate pod in the `fluffy-example-1` namespace.
+
+Key environment variables for Kubernetes:
+
+```yaml
+env:
+  - name: FLUFFY_AGGREGATOR_NODES_0_
+    value: "http://fluffy-batch-example:8080"
+  - name: FLUFFY_AGGREGATOR_NODES_1_
+    value: "http://fluffy-batch-h2:8080"
+  - name: FLUFFY_AGGREGATOR_POLL_INTERVAL_SECONDS
+    value: "10"
+  - name: FLUFFY_AGGREGATOR_EXTERNAL_URL_MAPPINGS
+    value: "http://fluffy-batch-example:8080=http://localhost:8080,http://fluffy-batch-h2:8080=http://localhost:8081"
+```
+
+The `EXTERNAL_URL_MAPPINGS` variable rewrites internal Kubernetes service URLs
+to browser-accessible URLs on the "Open Dashboard" buttons.
+
+The aggregator service is exposed on NodePort **30084** and defaults to port
+**8084** inside the container.
+
+---
+
+## Limitations
+
+- **Static node list** — nodes must be listed in configuration.  DNS-based or
+  service-registry discovery is a planned enhancement.
+- **Eventual consistency** — the aggregated view lags real-time by up to
+  `poll-interval-seconds`.
+- **Single aggregator** — no built-in HA.  Use a Kubernetes Deployment with
+  replicas + a load balancer for resilience.
+
 
 ## Architecture
 

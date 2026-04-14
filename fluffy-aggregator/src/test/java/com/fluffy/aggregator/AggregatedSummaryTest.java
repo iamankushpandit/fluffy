@@ -1,6 +1,5 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
-import com.fluffy.batch.api.NodeSummary;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

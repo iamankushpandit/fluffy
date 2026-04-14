@@ -320,9 +320,24 @@ if ($imageCheck -ne "fluffy-batch-example") {
 }
 Write-OK "Docker image built and verified"
 
-# ---------------------------------------------------------------------------
-# 6. Deploy to Kubernetes
-# ---------------------------------------------------------------------------
+# Build the aggregator Docker image
+Push-Location fluffy-aggregator
+try {
+    & docker build -t fluffy-aggregator:latest .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  [FAIL] Aggregator Docker build failed." -ForegroundColor Red
+        exit 1
+    }
+} finally {
+    Pop-Location
+}
+
+$aggregatorImageCheck = Invoke-Native docker images fluffy-aggregator:latest --format "{{.Repository}}"
+if ($aggregatorImageCheck -ne "fluffy-aggregator") {
+    Write-Host "  [FAIL] Aggregator Docker image not found after build." -ForegroundColor Red
+    exit 1
+}
+Write-OK "Aggregator Docker image built and verified"
 
 Write-Step "Deploying to Kubernetes (namespace: $Namespace)"
 
@@ -444,7 +459,7 @@ Write-OK "Kafka instance is ready"
 # Deploy aggregator node (React/MUI multi-node dashboard)
 Write-Host ""
 Write-Host "  [Aggregator] Deploying aggregator dashboard..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n $Namespace
+& kubectl apply -f fluffy-aggregator/k8s/app-aggregator.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] Aggregator deploy failed" -ForegroundColor Red; exit 1 }
 Write-OK "Aggregator deployment applied"
 Write-Host "  Waiting for aggregator rollout..."
@@ -481,7 +496,7 @@ if ($usePortForward) {
     Start-Job -Name "fluffy-pf-h2"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-h2      8081:8080 -n $ns } -ArgumentList $Namespace | Out-Null
     Start-Job -Name "fluffy-pf-db"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-db      8082:8080 -n $ns } -ArgumentList $Namespace | Out-Null
     Start-Job -Name "fluffy-pf-kafka"   -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-kafka   8083:8080 -n $ns } -ArgumentList $Namespace | Out-Null
-    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-aggregator    8084:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-aggregator    8084:8084 -n $ns } -ArgumentList $Namespace | Out-Null
 
     # Give port-forwards a moment to start
     Start-Sleep -Seconds 2
@@ -546,9 +561,6 @@ Write-Host "  Dashboard       : $aggrUrl/fluffy-aggregator" -ForegroundColor Cya
 Write-Host "  API Summary     : $aggrUrl/api/aggregator/summary" -ForegroundColor Cyan
 Write-Host "  API Nodes       : $aggrUrl/api/aggregator/nodes" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  --- Kubernetes Dashboard ---" -ForegroundColor White
-Write-Host "  Run: minikube dashboard" -ForegroundColor White
-Write-Host ""
 if ($usePortForward) {
     Write-Host "  NOTE: Port-forwarding is running as background jobs in this terminal." -ForegroundColor Yellow
     Write-Host "  Keep this terminal open for the URLs to remain accessible." -ForegroundColor Yellow
@@ -564,9 +576,47 @@ Write-Host "    kubectl logs -l app=fluffy-batch-kafka -n $Namespace          # 
 Write-Host "    kubectl logs -l app=fluffy-aggregator -n $Namespace           # View Aggregator logs"
 Write-Host "    kubectl logs -l app=postgres -n $Namespace                    # View PostgreSQL logs"
 Write-Host "    kubectl logs -l app=kafka -n $Namespace                       # View Kafka logs"
-Write-Host "    minikube dashboard                                        # Open K8s dashboard"
 Write-Host ""
 Write-Host "  To tear down:" -ForegroundColor Yellow
 Write-Host "    kubectl delete namespace $Namespace"
 Write-Host "    minikube stop"
+
+# ---------------------------------------------------------------------------
+# Launch Minikube dashboard and display its URL
+# ---------------------------------------------------------------------------
+
+Write-Step "Launching Minikube dashboard"
+
+Write-Host "  Starting Minikube dashboard proxy in the background..." -ForegroundColor Cyan
+$dashboardUrlFile = [System.IO.Path]::GetTempFileName()
+$dashboardJob = Start-Job -ScriptBlock {
+    param($outFile)
+    minikube dashboard --url 2>$null | Tee-Object -FilePath $outFile
+} -ArgumentList $dashboardUrlFile
+
+# Wait up to 15 seconds for the URL to appear
+$k8sDashboardUrl = ""
+for ($i = 0; $i -lt 15; $i++) {
+    Start-Sleep -Seconds 1
+    if (Test-Path $dashboardUrlFile) {
+        $content = Get-Content $dashboardUrlFile -ErrorAction SilentlyContinue
+        $k8sDashboardUrl = $content | Where-Object { $_ -match '^http' } | Select-Object -First 1
+        if ($k8sDashboardUrl) { break }
+    }
+}
+Remove-Item $dashboardUrlFile -ErrorAction SilentlyContinue
+
+Write-Host ""
+if ($k8sDashboardUrl) {
+    Write-Host "  Minikube Dashboard is running (Job ID: $($dashboardJob.Id))" -ForegroundColor Green
+    Write-Host "  --- Kubernetes Dashboard ---" -ForegroundColor White
+    Write-Host "  Minikube Dashboard : $k8sDashboardUrl" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Keep this terminal open or the dashboard proxy will stop." -ForegroundColor Yellow
+    Write-Host "  To stop the dashboard: Stop-Job -Id $($dashboardJob.Id); Remove-Job -Id $($dashboardJob.Id)" -ForegroundColor Yellow
+} else {
+    Write-Host "  [WARN] Could not retrieve dashboard URL automatically." -ForegroundColor Yellow
+    Write-Host "  Run manually: minikube dashboard --url" -ForegroundColor Yellow
+}
+Write-Host ""
 

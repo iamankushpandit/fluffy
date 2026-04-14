@@ -32,6 +32,7 @@ See the [Backend Configuration Guide](docs/backends.md) for full details and mig
 |---|---|
 | `fluffy-batch-starter` | Core library — Spring Boot auto-configuration, job engine, REST API |
 | `fluffy-batch-example` | Example application demonstrating usage |
+| `fluffy-aggregator` | Standalone aggregator service — polls multiple Fluffy nodes and serves a unified React/MUI dashboard |
 
 ## When to Use Fluffy
 
@@ -96,6 +97,8 @@ See [Scaling Configuration](docs/scaling.md) for HPA and KEDA examples.
 
 Detailed documentation is available in the [`docs/`](docs/) directory:
 
+- [Developer Guide](docs/developer-guide.md) ← **start here**
+- [Life of a Job](docs/life-of-a-job.md)
 - [Architecture](docs/architecture.md)
 - [Backend Configuration](docs/backends.md)
 - [Job Definition](docs/job-definition.md)

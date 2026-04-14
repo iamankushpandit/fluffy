@@ -1,7 +1,8 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,12 +10,14 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Discovers and maintains a live list of node base URLs.
- * <p>
- * In its simplest form the list comes from {@link AggregatorProperties#getNodes()}.
- * The service refreshes periodically so that nodes added or removed at runtime
- * (e.g. via Kubernetes scaling) are picked up.
+ * Discovers and maintains the live list of Fluffy node base URLs.
+ *
+ * <p>In its simplest form the list comes from
+ * {@link AggregatorProperties#getNodes()}. The service refreshes periodically
+ * so that nodes added or removed at runtime (e.g. via Kubernetes scaling) are
+ * picked up.
  */
+@Service
 public class NodeDiscoveryService {
 
     private static final Logger log = LoggerFactory.getLogger(NodeDiscoveryService.class);

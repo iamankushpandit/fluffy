@@ -1,9 +1,8 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
-import com.fluffy.batch.api.NodeSummary;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,14 +10,9 @@ import java.util.Map;
 
 /**
  * REST endpoints consumed by the aggregator React dashboard.
- * <p>
- * This class is NOT annotated with {@code @Controller} or
- * {@code @RestController} because it must not be picked up by component
- * scanning.  Bean registration is handled exclusively by
- * {@link AggregatorAutoConfiguration} (conditional on property).
  */
+@RestController
 @RequestMapping("/api/aggregator")
-@ResponseBody
 public class AggregatorController {
 
     private final AggregatorService aggregatorService;
@@ -45,7 +39,7 @@ public class AggregatorController {
         return aggregatorService.getNodeSummaries();
     }
 
-    /** Triggers an immediate re-poll of all nodes. */
+    /** Triggers an immediate re-poll of all nodes and returns the updated summary. */
     @GetMapping("/refresh")
     public AggregatedSummary refreshAndGet() {
         discoveryService.refresh();

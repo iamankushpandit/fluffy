@@ -1,4 +1,4 @@
-package com.fluffy.batch.aggregator;
+package com.fluffy.aggregator;
 
 import org.junit.jupiter.api.Test;
 

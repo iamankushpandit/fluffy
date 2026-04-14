@@ -1,0 +1,31 @@
+server:
+  port: 8084
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+fluffy:
+  aggregator:
+    title: Fluffy Aggregator Dashboard
+    poll-interval-seconds: 10
+    discovery-interval-seconds: 30
+    dashboard-path: /fluffy-aggregator
+    # Configure the Fluffy nodes to aggregate:
+    # nodes:
+    #   - http://node1:8080
+    #   - http://node2:8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.fluffy: INFO

@@ -12,9 +12,11 @@
 #   3. Starts Minikube if not already running.
 #   4. Builds the parent Maven project (fluffy-batch-starter + fluffy-batch-example).
 #   5. Builds the Docker image inside Minikube's Docker daemon.
-#   6. Deploys PostgreSQL and the example app to a dedicated Kubernetes namespace.
+#   6. Deploys PostgreSQL, all example app instances, and the aggregator to a
+#      dedicated Kubernetes namespace.
 #   7. Verifies every step before proceeding to the next.
 #   8. Prints the application URL including the dashboard link.
+#   9. Launches the Minikube dashboard and displays its URL.
 #
 # Usage:
 #   chmod +x setup-and-deploy.sh
@@ -211,6 +213,23 @@ if [ "$image_check" != "fluffy-batch-example" ]; then
 fi
 write_ok "Docker image built and verified"
 
+# Build the aggregator Docker image
+pushd fluffy-aggregator >/dev/null
+docker build -t fluffy-aggregator:latest .
+if [ $? -ne 0 ]; then
+    popd >/dev/null
+    write_fail "Aggregator Docker build failed."
+    exit 1
+fi
+popd >/dev/null
+
+image_check=$(docker images fluffy-aggregator:latest --format "{{.Repository}}" 2>/dev/null)
+if [ "$image_check" != "fluffy-aggregator" ]; then
+    write_fail "Aggregator Docker image not found after build."
+    exit 1
+fi
+write_ok "Aggregator Docker image built and verified"
+
 # ---------------------------------------------------------------------------
 # 6. Deploy to Kubernetes
 # ---------------------------------------------------------------------------
@@ -327,6 +346,23 @@ if [ $? -ne 0 ]; then
 fi
 write_ok "Kafka instance is ready"
 
+# Deploy aggregator node (React/MUI multi-node dashboard)
+printf "  Deploying Fluffy Aggregator...\n"
+kubectl apply -f fluffy-aggregator/k8s/app-aggregator.yaml -n $NAMESPACE
+if [ $? -ne 0 ]; then
+    write_fail "Aggregator manifest apply failed."
+    exit 1
+fi
+
+printf "  Waiting for aggregator to be ready...\n"
+kubectl rollout status deployment/fluffy-aggregator -n $NAMESPACE --timeout=120s
+if [ $? -ne 0 ]; then
+    write_fail "Aggregator deployment did not become ready."
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-aggregator -n $NAMESPACE${NC}\n"
+    exit 1
+fi
+write_ok "Aggregator is ready"
+
 # Optionally apply HorizontalPodAutoscaler
 printf "  Applying HorizontalPodAutoscaler for DB instance...\n"
 kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n $NAMESPACE
@@ -355,17 +391,25 @@ printf "  ${WHITE}API Base        : %s/api/jobs${NC}\n" "$service_url"
 printf "  ${WHITE}Registered Jobs : %s/api/jobs/registered${NC}\n" "$service_url"
 printf "\n"
 printf "  ${WHITE}--- H2 instance (in-memory, no external DB) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30081/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30081${NC}\n" "$minikube_ip"
 printf "  ${WHITE}H2 Console      : http://%s:30081/h2-console${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30081/api/jobs${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${WHITE}--- Database instance (database profile) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30082/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30082${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30082/api/jobs${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${WHITE}--- Kafka instance (kafka profile) ---${NC}\n"
+printf "  ${WHITE}Dashboard       : http://%s:30083/fluffy-dashboard/index.html${NC}\n" "$minikube_ip"
 printf "  ${WHITE}Application URL : http://%s:30083${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30083/api/jobs${NC}\n" "$minikube_ip"
+printf "\n"
+printf "  ${CYAN}--- Aggregator Dashboard (multi-node React/MUI) ---${NC}\n"
+printf "  ${CYAN}Dashboard       : http://%s:30084/fluffy-aggregator${NC}\n" "$minikube_ip"
+printf "  ${CYAN}API Summary     : http://%s:30084/api/aggregator/summary${NC}\n" "$minikube_ip"
+printf "  ${CYAN}API Nodes       : http://%s:30084/api/aggregator/nodes${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${YELLOW}Useful commands:${NC}\n"
 printf "    kubectl get pods -n $NAMESPACE                                # Check pod status\n"
@@ -373,10 +417,45 @@ printf "    kubectl logs -l app=fluffy-batch-example -n $NAMESPACE        # View
 printf "    kubectl logs -l app=fluffy-batch-h2 -n $NAMESPACE             # View H2 instance logs\n"
 printf "    kubectl logs -l app=fluffy-batch-db -n $NAMESPACE             # View DB instance logs\n"
 printf "    kubectl logs -l app=fluffy-batch-kafka -n $NAMESPACE          # View Kafka instance logs\n"
+printf "    kubectl logs -l app=fluffy-aggregator -n $NAMESPACE           # View Aggregator logs\n"
 printf "    kubectl logs -l app=postgres -n $NAMESPACE                    # View PostgreSQL logs\n"
 printf "    kubectl logs -l app=kafka -n $NAMESPACE                       # View Kafka logs\n"
-printf "    minikube dashboard                                        # Open K8s dashboard\n"
 printf "\n"
 printf "  ${YELLOW}To tear down:${NC}\n"
 printf "    kubectl delete namespace $NAMESPACE\n"
 printf "    minikube stop\n"
+
+# ---------------------------------------------------------------------------
+# 8. Launch Minikube dashboard and display its URL
+# ---------------------------------------------------------------------------
+
+write_step "Launching Minikube dashboard"
+
+printf "  Starting Minikube dashboard proxy in the background...\n"
+dashboard_url_file=$(mktemp)
+minikube dashboard --url > "$dashboard_url_file" 2>/dev/null &
+DASHBOARD_PID=$!
+
+# Wait up to 15 seconds for the URL to appear
+k8s_dashboard_url=""
+for i in $(seq 1 15); do
+    sleep 1
+    k8s_dashboard_url=$(grep -m1 'http' "$dashboard_url_file" 2>/dev/null || true)
+    if [ -n "$k8s_dashboard_url" ]; then
+        break
+    fi
+done
+rm -f "$dashboard_url_file"
+
+printf "\n"
+if [ -n "$k8s_dashboard_url" ]; then
+    printf "  ${GREEN}Minikube Dashboard is running (PID: $DASHBOARD_PID)${NC}\n"
+    printf "  ${WHITE}Minikube Dashboard : %s${NC}\n" "$k8s_dashboard_url"
+    printf "\n"
+    printf "  ${YELLOW}Keep this terminal open or the dashboard proxy will stop.${NC}\n"
+    printf "  ${YELLOW}To stop the dashboard: kill %s${NC}\n" "$DASHBOARD_PID"
+else
+    write_warn "Could not retrieve dashboard URL automatically."
+    printf "  ${YELLOW}Run manually: minikube dashboard --url${NC}\n"
+fi
+printf "\n"
