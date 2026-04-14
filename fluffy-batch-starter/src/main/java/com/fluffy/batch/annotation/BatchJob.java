@@ -15,4 +15,5 @@ public @interface BatchJob {
     boolean async() default true;
     long timeoutSeconds() default 0;
     String[] requiredParams() default {};
+    String cronExpression() default "";
 }

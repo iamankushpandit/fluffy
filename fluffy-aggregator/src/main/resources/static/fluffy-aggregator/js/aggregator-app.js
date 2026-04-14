@@ -179,6 +179,7 @@
             size: 'small',
             sx: { mr: 2 }
           }),
+          e(MUI.Button, { color: 'inherit', href: '/fluffy-scheduler/index.html' }, 'Scheduler'),
           e(MUI.Button, { color: 'inherit', onClick: handleRefresh, disabled: loading }, 'Refresh')
         )
       ),

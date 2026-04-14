@@ -13,6 +13,7 @@ public record JobDefinition(
         boolean async,
         long timeoutSeconds,
         String[] requiredParams,
+        String cronExpression,
         JobHandler handler
 ) {
     /** Validates invariants. */
@@ -25,6 +26,9 @@ public record JobDefinition(
         }
         if (requiredParams == null) {
             requiredParams = new String[0];
+        }
+        if (cronExpression == null) {
+            cronExpression = "";
         }
     }
 
@@ -39,6 +43,7 @@ public record JobDefinition(
         private boolean async = true;
         private long timeoutSeconds = 0;
         private String[] requiredParams = new String[0];
+        private String cronExpression = "";
         private JobHandler handler;
 
         public Builder(String name) {
@@ -70,6 +75,11 @@ public record JobDefinition(
             return this;
         }
 
+        public Builder cronExpression(String cronExpression) {
+            this.cronExpression = cronExpression;
+            return this;
+        }
+
         public Builder handler(JobHandler handler) {
             this.handler = handler;
             return this;
@@ -77,7 +87,7 @@ public record JobDefinition(
 
         public JobDefinition build() {
             return new JobDefinition(name, description, maxConcurrency, async,
-                    timeoutSeconds, requiredParams, handler);
+                    timeoutSeconds, requiredParams, cronExpression, handler);
         }
     }
 }

@@ -49,11 +49,23 @@ public class AggregatorWebConfig implements WebMvcConfigurer {
         return reg;
     }
 
+    @Bean
+    public FilterRegistrationBean<OncePerRequestFilter> schedulerDashboardRedirectFilter() {
+        FilterRegistrationBean<OncePerRequestFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(new AggregatorDashboardRedirectFilter("/fluffy-scheduler"));
+        reg.addUrlPatterns("/fluffy-scheduler", "/fluffy-scheduler/");
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return reg;
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String path = normalizePath(properties.getDashboardPath());
         registry.addResourceHandler(path + "/**")
                 .addResourceLocations("classpath:/static/fluffy-aggregator/");
+        // Serve the scheduler UI at /fluffy-scheduler
+        registry.addResourceHandler("/fluffy-scheduler/**")
+                .addResourceLocations("classpath:/static/fluffy-scheduler/");
     }
 
     static String normalizePath(String path) {
