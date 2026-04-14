@@ -39,6 +39,40 @@ By participating in this project, you agree to maintain a respectful and inclusi
 - At least one maintainer approval is required before merging.
 - Keep pull requests small and focused to make reviews easier.
 
+## Cloud-Native Testing Mindset
+
+Fluffy is designed to run in cloud-native environments (e.g., Kubernetes). Contributors are expected to adopt a cloud-native mindset when developing and testing changes.
+
+### Testing Requirements
+
+1. **Test locally first.** All changes must be validated locally before submitting a pull request:
+   ```bash
+   mvn clean test
+   ```
+2. **Test on a cloud environment when possible.** If you have access to a Kubernetes cluster or cloud platform, deploy and verify your changes there as well. The example application includes a Dockerfile and Kubernetes manifests under `fluffy-batch-starter/fluffy-batch-example/k8s/` to help with this:
+   ```bash
+   # Build the Docker image
+   docker build -t fluffy-batch-example fluffy-batch-starter/fluffy-batch-example
+
+   # Apply Kubernetes manifests
+   kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/
+   ```
+3. **Contribute to the existing test setup.** Whenever possible, add your tests to the existing test suites and configurations. This keeps the project's test infrastructure consistent and maintainable.
+4. **If new test configuration is required:**
+   - Create the new configuration (e.g., new Kubernetes manifests, Docker Compose files, or Spring profiles) and include it in your pull request.
+   - Provide clear evidence that your changes work as expected (e.g., screenshots, log output, or CI pipeline results).
+   - Demonstrate that no existing functionality is broken by your changes (e.g., by showing passing existing tests alongside your new tests).
+   - Document any new configuration in your pull request description so reviewers can reproduce the testing.
+
+### What Counts as Evidence
+
+When introducing new configurations or infrastructure changes, include at least one of the following in your pull request:
+
+- Screenshots or screen recordings of the application running with your changes.
+- Relevant log output showing successful execution.
+- CI/CD pipeline results demonstrating passing tests.
+- A brief write-up describing the manual verification steps you performed.
+
 ## Coding Standards
 
 - **Java version**: 21
