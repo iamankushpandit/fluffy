@@ -375,8 +375,42 @@ printf "    kubectl logs -l app=fluffy-batch-db -n $NAMESPACE             # View
 printf "    kubectl logs -l app=fluffy-batch-kafka -n $NAMESPACE          # View Kafka instance logs\n"
 printf "    kubectl logs -l app=postgres -n $NAMESPACE                    # View PostgreSQL logs\n"
 printf "    kubectl logs -l app=kafka -n $NAMESPACE                       # View Kafka logs\n"
-printf "    minikube dashboard                                        # Open K8s dashboard\n"
 printf "\n"
 printf "  ${YELLOW}To tear down:${NC}\n"
 printf "    kubectl delete namespace $NAMESPACE\n"
 printf "    minikube stop\n"
+
+# ---------------------------------------------------------------------------
+# 8. Launch Minikube dashboard and display its URL
+# ---------------------------------------------------------------------------
+
+write_step "Launching Minikube dashboard"
+
+printf "  Starting Minikube dashboard proxy in the background...\n"
+dashboard_url_file=$(mktemp)
+minikube dashboard --url > "$dashboard_url_file" 2>/dev/null &
+DASHBOARD_PID=$!
+
+# Wait up to 15 seconds for the URL to appear
+k8s_dashboard_url=""
+for i in $(seq 1 15); do
+    sleep 1
+    k8s_dashboard_url=$(grep -m1 'http' "$dashboard_url_file" 2>/dev/null || true)
+    if [ -n "$k8s_dashboard_url" ]; then
+        break
+    fi
+done
+rm -f "$dashboard_url_file"
+
+printf "\n"
+if [ -n "$k8s_dashboard_url" ]; then
+    printf "  ${GREEN}Minikube Dashboard is running (PID: $DASHBOARD_PID)${NC}\n"
+    printf "  ${WHITE}Minikube Dashboard : %s${NC}\n" "$k8s_dashboard_url"
+    printf "\n"
+    printf "  ${YELLOW}Keep this terminal open or the dashboard proxy will stop.${NC}\n"
+    printf "  ${YELLOW}To stop the dashboard: kill %s${NC}\n" "$DASHBOARD_PID"
+else
+    write_warn "Could not retrieve dashboard URL automatically."
+    printf "  ${YELLOW}Run manually: minikube dashboard --url${NC}\n"
+fi
+printf "\n"
