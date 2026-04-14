@@ -1,18 +1,12 @@
 package com.fluffy.batch.aggregator;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-
-@Controller
+/**
+ * Redirect controller for the aggregator dashboard.
+ * <p>
+ * This class is NOT annotated with {@code @Controller} because it must not
+ * be picked up by component scanning.  The redirect is handled by the
+ * filter registered in {@link AggregatorAutoConfiguration}.
+ */
 class AggregatorDashboardRedirect {
-
-    @GetMapping(value = {"/fluffy-aggregator", "/fluffy-aggregator/"})
-    public ResponseEntity<Void> redirectToDashboard() {
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/fluffy-aggregator/index.html")
-                .build();
-    }
+    // Redirect is handled by aggregatorDashboardRedirectFilter in AggregatorAutoConfiguration
 }
