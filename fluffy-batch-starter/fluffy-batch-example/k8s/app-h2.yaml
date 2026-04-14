@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fluffy-batch-h2
-  namespace: fluffy
+  namespace: fluffy-example-1
   labels:
     app: fluffy-batch-h2
     backend: h2
@@ -31,6 +31,8 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=96m -Xss512k"
+            - name: FLUFFY_BATCH_DASHBOARD_TITLE
+              value: "Fluffy Example - H2"
           startupProbe:
             httpGet:
               path: /api/jobs/registered
@@ -60,7 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fluffy-batch-h2
-  namespace: fluffy
+  namespace: fluffy-example-1
 spec:
   selector:
     app: fluffy-batch-h2

@@ -7,7 +7,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: fluffy-batch-db-hpa
-  namespace: fluffy
+  namespace: fluffy-example-1
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

@@ -54,6 +54,9 @@ public class DashboardAutoConfiguration {
                 String path = normalizePath(properties.getPath());
                 registry.addResourceHandler(path + "/**")
                         .addResourceLocations("classpath:/static/fluffy-dashboard/");
+                // Serve the Fluffy framework icon at /fluffy.svg
+                registry.addResourceHandler("/fluffy.svg")
+                        .addResourceLocations("classpath:/static/icons/");
             }
         };
     }

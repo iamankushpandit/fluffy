@@ -25,10 +25,12 @@ fluffy:
       type: h2
     dashboard:
       enabled: true
+      title: Fluffy Batch Dashboard
     metrics:
       enabled: true
     aggregator:
       enabled: false
+      title: Fluffy Aggregator Dashboard
       # To enable the aggregator, set enabled: true and list node URLs:
       # nodes:
       #   - http://localhost:8081

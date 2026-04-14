@@ -12,7 +12,7 @@
 #   3. Starts Minikube if not already running.
 #   4. Builds the parent Maven project (fluffy-batch-starter + fluffy-batch-example).
 #   5. Builds the Docker image inside Minikube's Docker daemon.
-#   6. Deploys PostgreSQL and the example app to the "fluffy" Kubernetes namespace.
+#   6. Deploys PostgreSQL and the example app to a dedicated Kubernetes namespace.
 #   7. Verifies every step before proceeding to the next.
 #   8. Prints the application URL including the dashboard link.
 #
@@ -25,6 +25,12 @@
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Configuration — change the namespace to distinguish example deployments
+# from the Fluffy framework itself.
+# ---------------------------------------------------------------------------
+NAMESPACE="fluffy-example-1"
 
 # ---------------------------------------------------------------------------
 # Helper functions
@@ -123,15 +129,15 @@ write_ok "All prerequisites verified"
 
 write_step "Cleaning up existing deployment (if any)"
 
-if kubectl get namespace fluffy --no-headers 2>/dev/null; then
-    printf "  ${YELLOW}Found existing 'fluffy' namespace — deleting...${NC}\n"
-    if kubectl delete namespace fluffy --timeout=120s 2>/dev/null; then
+if kubectl get namespace $NAMESPACE --no-headers 2>/dev/null; then
+    printf "  ${YELLOW}Found existing '$NAMESPACE' namespace - deleting...${NC}\n"
+    if kubectl delete namespace $NAMESPACE --timeout=120s 2>/dev/null; then
         write_ok "Existing deployment removed"
     else
         write_warn "Could not fully delete namespace. Continuing anyway."
     fi
 else
-    write_skip "No existing 'fluffy' namespace found"
+    write_skip "No existing '$NAMESPACE' namespace found"
 fi
 
 # ---------------------------------------------------------------------------
@@ -209,121 +215,121 @@ write_ok "Docker image built and verified"
 # 6. Deploy to Kubernetes
 # ---------------------------------------------------------------------------
 
-write_step "Deploying to Kubernetes (namespace: fluffy)"
+write_step "Deploying to Kubernetes (namespace: $NAMESPACE)"
 
 # Create namespace
-kubectl create namespace fluffy
+kubectl create namespace $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "Could not create namespace."
     exit 1
 fi
-write_ok "Namespace 'fluffy' created"
+write_ok "Namespace '$NAMESPACE' created"
 
 # Deploy PostgreSQL
 printf "  Deploying PostgreSQL...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/postgres.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/postgres.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "PostgreSQL manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for PostgreSQL to be ready...\n"
-kubectl rollout status deployment/postgres -n fluffy --timeout=120s
+kubectl rollout status deployment/postgres -n $NAMESPACE --timeout=120s
 if [ $? -ne 0 ]; then
     write_fail "PostgreSQL deployment did not become ready."
-    printf "  ${YELLOW}Check: kubectl describe pods -l app=postgres -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl describe pods -l app=postgres -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "PostgreSQL is ready"
 
 # Deploy the example app (original postgres-backed instance)
 printf "  Deploying Fluffy Batch Example...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "Application manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for application to be ready...\n"
-kubectl rollout status deployment/fluffy-batch-example -n fluffy --timeout=180s
+kubectl rollout status deployment/fluffy-batch-example -n $NAMESPACE --timeout=180s
 if [ $? -ne 0 ]; then
     write_fail "Application did not become ready."
-    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-example -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-example -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "Application is ready"
 
 # Deploy Kafka
 printf "  Deploying Kafka...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "Kafka manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for Kafka to be ready...\n"
-kubectl rollout status deployment/kafka -n fluffy --timeout=180s
+kubectl rollout status deployment/kafka -n $NAMESPACE --timeout=180s
 if [ $? -ne 0 ]; then
     write_fail "Kafka deployment did not become ready."
-    printf "  ${YELLOW}Check: kubectl describe pods -l app=kafka -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl describe pods -l app=kafka -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "Kafka is ready"
 
 # Deploy H2-backed instance
 printf "  Deploying Fluffy Batch H2 instance...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "H2 instance manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for H2 instance to be ready...\n"
-kubectl rollout status deployment/fluffy-batch-h2 -n fluffy --timeout=180s
+kubectl rollout status deployment/fluffy-batch-h2 -n $NAMESPACE --timeout=180s
 if [ $? -ne 0 ]; then
     write_fail "H2 instance did not become ready."
-    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-h2 -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-h2 -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "H2 instance is ready"
 
 # Deploy database-backed instance
 printf "  Deploying Fluffy Batch DB instance...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "DB instance manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for DB instance to be ready...\n"
-kubectl rollout status deployment/fluffy-batch-db -n fluffy --timeout=180s
+kubectl rollout status deployment/fluffy-batch-db -n $NAMESPACE --timeout=180s
 if [ $? -ne 0 ]; then
     write_fail "DB instance did not become ready."
-    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-db -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-db -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "DB instance is ready"
 
 # Deploy Kafka-backed instance
 printf "  Deploying Fluffy Batch Kafka instance...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_fail "Kafka instance manifest apply failed."
     exit 1
 fi
 
 printf "  Waiting for Kafka instance to be ready...\n"
-kubectl rollout status deployment/fluffy-batch-kafka -n fluffy --timeout=180s
+kubectl rollout status deployment/fluffy-batch-kafka -n $NAMESPACE --timeout=180s
 if [ $? -ne 0 ]; then
     write_fail "Kafka instance did not become ready."
-    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-kafka -n fluffy${NC}\n"
+    printf "  ${YELLOW}Check: kubectl logs -l app=fluffy-batch-kafka -n $NAMESPACE${NC}\n"
     exit 1
 fi
 write_ok "Kafka instance is ready"
 
 # Optionally apply HorizontalPodAutoscaler
 printf "  Applying HorizontalPodAutoscaler for DB instance...\n"
-kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n fluffy
+kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n $NAMESPACE
 if [ $? -ne 0 ]; then
     write_warn "HPA apply failed (metrics-server may not be available). Skipping."
 else
@@ -336,7 +342,7 @@ fi
 
 write_step "Deployment complete!"
 
-service_url=$(minikube service fluffy-batch-example -n fluffy --url 2>/dev/null | head -1)
+service_url=$(minikube service fluffy-batch-example -n $NAMESPACE --url 2>/dev/null | head -1)
 minikube_ip=$(minikube ip 2>/dev/null || echo "$(hostname -I | awk '{print $1}')")
 
 printf "\n"
@@ -362,15 +368,15 @@ printf "  ${WHITE}Application URL : http://%s:30083${NC}\n" "$minikube_ip"
 printf "  ${WHITE}API Base        : http://%s:30083/api/jobs${NC}\n" "$minikube_ip"
 printf "\n"
 printf "  ${YELLOW}Useful commands:${NC}\n"
-printf "    kubectl get pods -n fluffy                                # Check pod status\n"
-printf "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View original app logs\n"
-printf "    kubectl logs -l app=fluffy-batch-h2 -n fluffy             # View H2 instance logs\n"
-printf "    kubectl logs -l app=fluffy-batch-db -n fluffy             # View DB instance logs\n"
-printf "    kubectl logs -l app=fluffy-batch-kafka -n fluffy          # View Kafka instance logs\n"
-printf "    kubectl logs -l app=postgres -n fluffy                    # View PostgreSQL logs\n"
-printf "    kubectl logs -l app=kafka -n fluffy                       # View Kafka logs\n"
+printf "    kubectl get pods -n $NAMESPACE                                # Check pod status\n"
+printf "    kubectl logs -l app=fluffy-batch-example -n $NAMESPACE        # View original app logs\n"
+printf "    kubectl logs -l app=fluffy-batch-h2 -n $NAMESPACE             # View H2 instance logs\n"
+printf "    kubectl logs -l app=fluffy-batch-db -n $NAMESPACE             # View DB instance logs\n"
+printf "    kubectl logs -l app=fluffy-batch-kafka -n $NAMESPACE          # View Kafka instance logs\n"
+printf "    kubectl logs -l app=postgres -n $NAMESPACE                    # View PostgreSQL logs\n"
+printf "    kubectl logs -l app=kafka -n $NAMESPACE                       # View Kafka logs\n"
 printf "    minikube dashboard                                        # Open K8s dashboard\n"
 printf "\n"
 printf "  ${YELLOW}To tear down:${NC}\n"
-printf "    kubectl delete namespace fluffy\n"
+printf "    kubectl delete namespace $NAMESPACE\n"
 printf "    minikube stop\n"

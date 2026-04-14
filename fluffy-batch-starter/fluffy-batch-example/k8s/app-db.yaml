@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fluffy-batch-db
-  namespace: fluffy
+  namespace: fluffy-example-1
   labels:
     app: fluffy-batch-db
     backend: database
@@ -42,6 +42,8 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=96m -Xss512k"
+            - name: FLUFFY_BATCH_DASHBOARD_TITLE
+              value: "Fluffy Example - Database"
             - name: SPRING_PROFILES_ACTIVE
               value: "database"
             - name: POSTGRES_HOST
@@ -92,7 +94,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fluffy-batch-db
-  namespace: fluffy
+  namespace: fluffy-example-1
 spec:
   selector:
     app: fluffy-batch-db

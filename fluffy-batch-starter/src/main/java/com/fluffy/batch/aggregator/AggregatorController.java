@@ -59,6 +59,7 @@ public class AggregatorController {
     @GetMapping("/config")
     public Map<String, Object> getConfig() {
         Map<String, Object> config = new LinkedHashMap<>();
+        config.put("title", properties.getTitle());
         config.put("pollIntervalSeconds", properties.getPollIntervalSeconds());
         config.put("discoveryIntervalSeconds", properties.getDiscoveryIntervalSeconds());
         config.put("nodeCount", discoveryService.getNodes().size());

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds and deploys the Fluffy Batch Example to a local Minikube Kubernetes cluster
     with a live PostgreSQL database.
@@ -11,7 +11,7 @@
     3. Starts Minikube if not already running.
     4. Builds the parent Maven project (fluffy-batch-starter + fluffy-batch-example).
     5. Builds the Docker image inside Minikube's Docker daemon.
-    6. Deploys PostgreSQL and the example app to the "fluffy" Kubernetes namespace.
+    6. Deploys PostgreSQL and the example app to a dedicated Kubernetes namespace.
     7. Verifies every step before proceeding to the next.
     8. Prints the application URL including the dashboard link.
 
@@ -25,6 +25,12 @@
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# ---------------------------------------------------------------------------
+# Configuration â€” change the namespace to distinguish example deployments
+# from the Fluffy framework itself.
+# ---------------------------------------------------------------------------
+$Namespace = "fluffy-example-1"
 
 # ---------------------------------------------------------------------------
 # Helper functions
@@ -232,17 +238,17 @@ Write-OK "All prerequisites verified"
 
 Write-Step "Cleaning up existing deployment (if any)"
 
-$nsExists = Invoke-Native kubectl get namespace fluffy --no-headers
+$nsExists = Invoke-Native kubectl get namespace $Namespace --no-headers
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "  Found existing 'fluffy' namespace - deleting..." -ForegroundColor Yellow
-    Invoke-Native kubectl delete namespace fluffy --timeout=120s | Out-Null
+    Write-Host "  Found existing '$Namespace' namespace - deleting..." -ForegroundColor Yellow
+    Invoke-Native kubectl delete namespace $Namespace --timeout=120s | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  [WARN] Could not fully delete namespace. Continuing anyway." -ForegroundColor Yellow
     } else {
         Write-OK "Existing deployment removed"
     }
 } else {
-    Write-Skip "No existing 'fluffy' namespace found"
+    Write-Skip "No existing '$Namespace' namespace found"
 }
 
 # ---------------------------------------------------------------------------
@@ -318,119 +324,119 @@ Write-OK "Docker image built and verified"
 # 6. Deploy to Kubernetes
 # ---------------------------------------------------------------------------
 
-Write-Step "Deploying to Kubernetes (namespace: fluffy)"
+Write-Step "Deploying to Kubernetes (namespace: $Namespace)"
 
 # Create namespace (ignore if it already exists)
-$nsCheck = Invoke-Native kubectl get namespace fluffy --no-headers
+$nsCheck = Invoke-Native kubectl get namespace $Namespace --no-headers
 if ($LASTEXITCODE -eq 0) {
-    Write-OK "Namespace 'fluffy' already exists"
+    Write-OK "Namespace '$Namespace' already exists"
 } else {
-    Invoke-Native kubectl create namespace fluffy | Out-Null
+    Invoke-Native kubectl create namespace $Namespace | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  [FAIL] Could not create namespace." -ForegroundColor Red
         exit 1
     }
-    Write-OK "Namespace 'fluffy' created"
+    Write-OK "Namespace '$Namespace' created"
 }
 
 # Deploy PostgreSQL
 Write-Host "  Deploying PostgreSQL..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/postgres.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/postgres.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] PostgreSQL manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for PostgreSQL to be ready..."
-& kubectl rollout status deployment/postgres -n fluffy --timeout=120s
+& kubectl rollout status deployment/postgres -n $Namespace --timeout=120s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] PostgreSQL deployment did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl describe pods -l app=postgres -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl describe pods -l app=postgres -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "PostgreSQL is ready"
 
 # Deploy the example app (original postgres-backed instance)
 Write-Host "  Deploying Fluffy Batch Example..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Application manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for application to be ready..."
-& kubectl rollout status deployment/fluffy-batch-example -n fluffy --timeout=180s
+& kubectl rollout status deployment/fluffy-batch-example -n $Namespace --timeout=180s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Application did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl logs -l app=fluffy-batch-example -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-example -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "Application is ready"
 
 # Deploy Kafka
 Write-Host "  Deploying Kafka..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/kafka.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Kafka manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for Kafka to be ready..."
-& kubectl rollout status deployment/kafka -n fluffy --timeout=180s
+& kubectl rollout status deployment/kafka -n $Namespace --timeout=180s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Kafka deployment did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl describe pods -l app=kafka -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl describe pods -l app=kafka -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "Kafka is ready"
 
 # Deploy H2-backed instance
 Write-Host "  Deploying Fluffy Batch H2 instance..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-h2.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] H2 instance manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for H2 instance to be ready..."
-& kubectl rollout status deployment/fluffy-batch-h2 -n fluffy --timeout=180s
+& kubectl rollout status deployment/fluffy-batch-h2 -n $Namespace --timeout=180s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] H2 instance did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl logs -l app=fluffy-batch-h2 -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-h2 -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "H2 instance is ready"
 
 # Deploy database-backed instance
 Write-Host "  Deploying Fluffy Batch DB instance..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-db.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] DB instance manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for DB instance to be ready..."
-& kubectl rollout status deployment/fluffy-batch-db -n fluffy --timeout=180s
+& kubectl rollout status deployment/fluffy-batch-db -n $Namespace --timeout=180s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] DB instance did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl logs -l app=fluffy-batch-db -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-db -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "DB instance is ready"
 
 # Deploy Kafka-backed instance
 Write-Host "  Deploying Fluffy Batch Kafka instance..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-kafka.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Kafka instance manifest apply failed." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "  Waiting for Kafka instance to be ready..."
-& kubectl rollout status deployment/fluffy-batch-kafka -n fluffy --timeout=180s
+& kubectl rollout status deployment/fluffy-batch-kafka -n $Namespace --timeout=180s
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [FAIL] Kafka instance did not become ready." -ForegroundColor Red
-    Write-Host "  Check: kubectl logs -l app=fluffy-batch-kafka -n fluffy" -ForegroundColor Yellow
+    Write-Host "  Check: kubectl logs -l app=fluffy-batch-kafka -n $Namespace" -ForegroundColor Yellow
     exit 1
 }
 Write-OK "Kafka instance is ready"
@@ -438,16 +444,16 @@ Write-OK "Kafka instance is ready"
 # Deploy aggregator node (React/MUI multi-node dashboard)
 Write-Host ""
 Write-Host "  [Aggregator] Deploying aggregator dashboard..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/app-aggregator.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] Aggregator deploy failed" -ForegroundColor Red; exit 1 }
 Write-OK "Aggregator deployment applied"
 Write-Host "  Waiting for aggregator rollout..."
-Invoke-Native kubectl rollout status deployment/fluffy-aggregator -n fluffy --timeout=120s
+Invoke-Native kubectl rollout status deployment/fluffy-aggregator -n $Namespace --timeout=120s
 Write-OK "Aggregator is running"
 
 # Optionally apply HorizontalPodAutoscaler
 Write-Host "  Applying HorizontalPodAutoscaler for DB instance..."
-& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n fluffy
+& kubectl apply -f fluffy-batch-starter/fluffy-batch-example/k8s/hpa.yaml -n $Namespace
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [WARN] HPA apply failed (metrics-server may not be available). Skipping." -ForegroundColor Yellow
 } else {
@@ -471,11 +477,11 @@ if ($usePortForward) {
     # Kill any leftover port-forward jobs
     Get-Job -Name "fluffy-pf-*" -ErrorAction SilentlyContinue | Stop-Job -PassThru | Remove-Job
 
-    Start-Job -Name "fluffy-pf-example" -ScriptBlock { kubectl port-forward svc/fluffy-batch-example 8080:8080 -n fluffy } | Out-Null
-    Start-Job -Name "fluffy-pf-h2"      -ScriptBlock { kubectl port-forward svc/fluffy-batch-h2      8081:8080 -n fluffy } | Out-Null
-    Start-Job -Name "fluffy-pf-db"      -ScriptBlock { kubectl port-forward svc/fluffy-batch-db      8082:8080 -n fluffy } | Out-Null
-    Start-Job -Name "fluffy-pf-kafka"   -ScriptBlock { kubectl port-forward svc/fluffy-batch-kafka   8083:8080 -n fluffy } | Out-Null
-    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { kubectl port-forward svc/fluffy-aggregator    8084:8080 -n fluffy } | Out-Null
+    Start-Job -Name "fluffy-pf-example" -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-example 8080:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-h2"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-h2      8081:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-db"      -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-db      8082:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-kafka"   -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-batch-kafka   8083:8080 -n $ns } -ArgumentList $Namespace | Out-Null
+    Start-Job -Name "fluffy-pf-aggr"    -ScriptBlock { param($ns) kubectl port-forward svc/fluffy-aggregator    8084:8080 -n $ns } -ArgumentList $Namespace | Out-Null
 
     # Give port-forwards a moment to start
     Start-Sleep -Seconds 2
@@ -499,7 +505,7 @@ if ($usePortForward) {
 
     function Get-NodePort {
         param([string]$ServiceName)
-        $port = (Invoke-Native kubectl get svc $ServiceName -n fluffy -o "jsonpath={.spec.ports[0].nodePort}") | Select-Object -First 1
+        $port = (Invoke-Native kubectl get svc $ServiceName -n $Namespace -o "jsonpath={.spec.ports[0].nodePort}") | Select-Object -First 1
         return $port
     }
 
@@ -550,16 +556,17 @@ if ($usePortForward) {
     Write-Host ""
 }
 Write-Host "  Useful commands:" -ForegroundColor Yellow
-Write-Host "    kubectl get pods -n fluffy                                # Check pod status"
-Write-Host "    kubectl logs -l app=fluffy-batch-example -n fluffy        # View original app logs"
-Write-Host "    kubectl logs -l app=fluffy-batch-h2 -n fluffy             # View H2 instance logs"
-Write-Host "    kubectl logs -l app=fluffy-batch-db -n fluffy             # View DB instance logs"
-Write-Host "    kubectl logs -l app=fluffy-batch-kafka -n fluffy          # View Kafka instance logs"
-Write-Host "    kubectl logs -l app=fluffy-aggregator -n fluffy           # View Aggregator logs"
-Write-Host "    kubectl logs -l app=postgres -n fluffy                    # View PostgreSQL logs"
-Write-Host "    kubectl logs -l app=kafka -n fluffy                       # View Kafka logs"
+Write-Host "    kubectl get pods -n $Namespace                                # Check pod status"
+Write-Host "    kubectl logs -l app=fluffy-batch-example -n $Namespace        # View original app logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-h2 -n $Namespace             # View H2 instance logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-db -n $Namespace             # View DB instance logs"
+Write-Host "    kubectl logs -l app=fluffy-batch-kafka -n $Namespace          # View Kafka instance logs"
+Write-Host "    kubectl logs -l app=fluffy-aggregator -n $Namespace           # View Aggregator logs"
+Write-Host "    kubectl logs -l app=postgres -n $Namespace                    # View PostgreSQL logs"
+Write-Host "    kubectl logs -l app=kafka -n $Namespace                       # View Kafka logs"
 Write-Host "    minikube dashboard                                        # Open K8s dashboard"
 Write-Host ""
 Write-Host "  To tear down:" -ForegroundColor Yellow
-Write-Host "    kubectl delete namespace fluffy"
+Write-Host "    kubectl delete namespace $Namespace"
 Write-Host "    minikube stop"
+

@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fluffy-aggregator
-  namespace: fluffy
+  namespace: fluffy-example-1
   labels:
     app: fluffy-aggregator
 spec:
@@ -25,6 +25,8 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=96m -Xss512k"
+            - name: FLUFFY_BATCH_AGGREGATOR_TITLE
+              value: "Fluffy Example - Aggregator"
             - name: FLUFFY_BATCH_AGGREGATOR_ENABLED
               value: "true"
             - name: FLUFFY_BATCH_AGGREGATOR_NODES_0_
@@ -68,7 +70,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fluffy-aggregator
-  namespace: fluffy
+  namespace: fluffy-example-1
 spec:
   selector:
     app: fluffy-aggregator

@@ -19,6 +19,9 @@ public class AggregatorProperties {
     /** Whether the aggregator feature is active. */
     private boolean enabled = false;
 
+    /** Title displayed in the aggregator dashboard UI. */
+    private String title = "Fluffy Aggregator Dashboard";
+
     /** Static list of node base URLs (e.g. http://node1:8080). */
     private List<String> nodes = new ArrayList<>();
 
@@ -42,6 +45,9 @@ public class AggregatorProperties {
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
     public List<String> getNodes() { return nodes; }
     public void setNodes(List<String> nodes) { this.nodes = nodes; }

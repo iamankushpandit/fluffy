@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
     description = "Generates a report based on provided parameters",
     async = true,
     maxConcurrency = 2,
+    timeoutSeconds = 360,
     requiredParams = {"reportType"}
 )
 public class ReportGenerationJob implements JobHandler {
@@ -25,10 +26,12 @@ public class ReportGenerationJob implements JobHandler {
         log.info("Generating report: type={}, dateRange={}, requestedBy={}",
                 reportType, dateRange, context.getRequestedBy());
 
-        for (int i = 0; i < 5; i++) {
+        int totalIterations = 60;
+        for (int i = 0; i < totalIterations; i++) {
             context.checkInterrupted();
-            log.info("Report generation progress: {}%", (i + 1) * 20);
-            Thread.sleep(200);
+            int pct = (int) ((i + 1) * 100.0 / totalIterations);
+            log.info("Report generation progress: {}% (iteration {}/{})", pct, i + 1, totalIterations);
+            Thread.sleep(5000);
         }
 
         log.info("Report generation completed successfully");

@@ -23,9 +23,12 @@ const FluffyRender = (() => {
   }
 
   function renderTitle() {
-    const el = document.getElementById('dashboard-title');
-    if (el) el.textContent = FluffyState.config.title || 'Fluffy Batch Dashboard';
-    document.title = FluffyState.config.title || 'Fluffy Batch Dashboard';
+    var title = FluffyState.config.title || 'Fluffy Batch Dashboard';
+    var el = document.getElementById('dashboard-title');
+    if (el) el.textContent = title;
+    document.title = title;
+    var headerEl = document.getElementById('header-title');
+    if (headerEl) headerEl.textContent = title;
   }
 
   function renderAuthSection() {

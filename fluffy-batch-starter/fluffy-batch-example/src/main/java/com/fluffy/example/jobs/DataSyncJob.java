@@ -9,8 +9,9 @@ import org.slf4j.LoggerFactory;
 @BatchJob(
     name = "data-sync",
     description = "Synchronizes data between systems",
-    async = false,
-    maxConcurrency = 1
+    async = true,
+    maxConcurrency = 1,
+    timeoutSeconds = 360
 )
 public class DataSyncJob implements JobHandler {
 
@@ -22,7 +23,14 @@ public class DataSyncJob implements JobHandler {
         String destination = context.getParam("destination");
 
         log.info("Starting data sync from {} to {}", source, destination);
-        Thread.sleep(100);
+
+        int totalIterations = 60;
+        for (int i = 0; i < totalIterations; i++) {
+            context.checkInterrupted();
+            log.info("Data sync progress: iteration {}/{}", i + 1, totalIterations);
+            Thread.sleep(5000);
+        }
+
         log.info("Data sync completed");
     }
 }

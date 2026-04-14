@@ -159,11 +159,20 @@
       return function () { clearInterval(interval); };
     }, [config]);
 
+    // Update document title from config
+    React.useEffect(function () {
+      if (config && config.title) {
+        document.title = config.title;
+      }
+    }, [config]);
+
     return e(MUI.ThemeProvider, { theme: theme },
       e(MUI.CssBaseline),
       e(MUI.AppBar, { position: 'static', sx: { mb: 3 } },
         e(MUI.Toolbar, null,
-          e(MUI.Typography, { variant: 'h6', sx: { flexGrow: 1 } }, 'Fluffy Aggregator Dashboard'),
+          e('img', { src: '/fluffy.svg', alt: 'Fluffy', style: { width: 32, height: 32, marginRight: 12 } }),
+          e(MUI.Typography, { variant: 'h6', sx: { flexGrow: 1 } },
+            (config && config.title) || 'Fluffy Aggregator Dashboard'),
           config && e(MUI.Chip, {
             label: config.nodeCount + ' node(s)',
             color: 'secondary',
