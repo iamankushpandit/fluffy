@@ -16,8 +16,9 @@ import java.util.Optional;
 
 /**
  * REST API for managing cron schedules on this node.
+ * Registered as a bean by {@link com.fluffy.batch.autoconfigure.CronScheduleAutoConfiguration}.
  */
-@RestController
+@ResponseBody
 @RequestMapping("/api/jobs/schedules")
 public class CronScheduleController {
 

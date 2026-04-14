@@ -18,6 +18,7 @@ class JobDefinitionTest {
         assertThat(def.async()).isTrue();
         assertThat(def.timeoutSeconds()).isZero();
         assertThat(def.requiredParams()).isEmpty();
+        assertThat(def.cronExpression()).isEmpty();
         assertThat(def.handler()).isNotNull();
     }
 
@@ -69,14 +70,30 @@ class JobDefinitionTest {
 
     @Test
     void shouldDefaultNullRequiredParamsToEmpty() {
-        JobDefinition def = new JobDefinition("test", "", 1, true, 0, null, ctx -> {});
+        JobDefinition def = new JobDefinition("test", "", 1, true, 0, null, null, ctx -> {});
         assertThat(def.requiredParams()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void shouldDefaultNullCronExpressionToEmpty() {
+        JobDefinition def = new JobDefinition("test", "", 1, true, 0, null, null, ctx -> {});
+        assertThat(def.cronExpression()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void shouldBuildWithCronExpression() {
+        JobDefinition def = JobDefinition.builder("cron-job")
+                .cronExpression("0 0 * * * *")
+                .handler(ctx -> {})
+                .build();
+
+        assertThat(def.cronExpression()).isEqualTo("0 0 * * * *");
     }
 
     @Test
     void shouldCreateViaRecordConstructor() {
         String[] params = {"p1"};
-        JobDefinition def = new JobDefinition("direct-job", "desc", 2, false, 30, params, ctx -> {});
+        JobDefinition def = new JobDefinition("direct-job", "desc", 2, false, 30, params, "", ctx -> {});
 
         assertThat(def.name()).isEqualTo("direct-job");
         assertThat(def.description()).isEqualTo("desc");
