@@ -107,7 +107,15 @@ Detailed documentation is available in the [`docs/`](docs/) directory:
 - [Metrics](docs/metrics.md)
 - [Scaling](docs/scaling.md)
 - [Fault Tolerance & Recovery](docs/recovery.md)
+- [Aggregator Dashboard](docs/aggregator.md)
 - [Postman Collection](docs/fluffy-batch.postman_collection.json)
+
+### Cloud Deployment Guides
+
+- [AWS (EKS, ECS/Fargate, RDS, MSK)](docs/setup-aws.md)
+- [Azure (AKS, Container Apps, Azure Database, Event Hubs)](docs/setup-azure.md)
+- [GCP (GKE, Cloud Run, Cloud SQL)](docs/setup-gcp.md)
+- [Red Hat OpenShift (OCP, AMQ Streams, Templates)](docs/setup-rhos.md)
 
 ## Contributing
 
