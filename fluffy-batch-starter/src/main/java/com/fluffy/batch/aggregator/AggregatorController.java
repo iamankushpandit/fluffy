@@ -1,7 +1,6 @@
 package com.fluffy.batch.aggregator;
 
 import com.fluffy.batch.api.NodeSummary;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -13,12 +12,11 @@ import java.util.Map;
 /**
  * REST endpoints consumed by the aggregator React dashboard.
  * <p>
- * Annotated with {@code @Controller} (not {@code @RestController}) so that
- * handler detection works in Spring 6.2+.  The class is NOT in a
- * component-scanned package; bean registration is handled by
+ * This class is NOT annotated with {@code @Controller} or
+ * {@code @RestController} because it must not be picked up by component
+ * scanning.  Bean registration is handled exclusively by
  * {@link AggregatorAutoConfiguration} (conditional on property).
  */
-@Controller
 @RequestMapping("/api/aggregator")
 @ResponseBody
 public class AggregatorController {
