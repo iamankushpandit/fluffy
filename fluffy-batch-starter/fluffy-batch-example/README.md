@@ -4,11 +4,12 @@ A demo application showcasing [Fluffy Batch Starter](../../README.md) — a ligh
 
 ## What's Included
 
-| Job | Type | Description |
-|---|---|---|
-| `data-sync` | Synchronous | Simulates a data synchronization task between two systems |
-| `report-generation` | Async | Generates a report; requires a `reportType` parameter; supports graceful stop |
-| `long-running` | Async | Demonstrates stop/timeout support with 60 iterations of 1-second work |
+| Job | Type | Execution Mode | Description |
+|---|---|---|---|
+| `data-sync` | Async | LOCAL | Simulates a data synchronization task between two systems |
+| `report-generation` | Async | LOCAL | Generates a report; requires a `reportType` parameter; supports graceful stop |
+| `long-running` | Async | LOCAL | Demonstrates stop/timeout support with 60 iterations of 1-second work |
+| `cloud-native-etl` | Async | CLOUD_NATIVE | ETL pipeline dispatched to an external cloud-native orchestrator (K8s, Airflow, AWS Batch) |
 
 ## Prerequisites
 
@@ -71,6 +72,11 @@ curl -X POST http://localhost:8080/api/jobs/report-generation/start \
      -H "Content-Type: application/json" \
      -d '{"parameters":{"reportType":"monthly","dateRange":"2024-Q1"}}'
 
+# Start the cloud-native ETL job (dispatches to external orchestrator when cloud-native profile is active)
+curl -X POST http://localhost:8080/api/jobs/cloud-native-etl/start \
+     -H "Content-Type: application/json" \
+     -d '{"parameters":{"pipeline":"daily-ingest","stage":"extract"}}'
+
 # Check job status
 curl http://localhost:8080/api/jobs/1/status
 
@@ -83,8 +89,83 @@ curl -X POST http://localhost:8080/api/jobs/1/retry
 # List all executions
 curl http://localhost:8080/api/jobs/executions
 
-# List registered jobs
+# List registered jobs (shows executionMode for each job)
 curl http://localhost:8080/api/jobs/registered
+```
+
+## Cloud-Native Execution
+
+Jobs annotated with `executionMode = ExecutionMode.CLOUD_NATIVE` can be dispatched to an
+external orchestrator (Kubernetes CronJob, Apache Airflow, AWS Batch, Google Cloud Composer,
+Azure Logic Apps, HashiCorp Nomad, etc.) instead of running in-process.
+
+### How It Works
+
+1. **Dispatch**: When a cloud-native job is triggered, Fluffy sends an HTTP POST to the
+   configured endpoint with the job name, execution ID, parameters, and a callback URL.
+2. **Execute**: The external orchestrator runs the containerised job. The job can be any
+   stateless container — it doesn't need to use Fluffy's runtime.
+3. **Callback**: When the job finishes, the orchestrator POSTs a status update
+   (`COMPLETED`, `FAILED`, or `STOPPED`) back to Fluffy's callback endpoint.
+
+### Configuration
+
+Activate the `cloud-native` Spring profile:
+
+```bash
+java -jar fluffy-batch-example.jar --spring.profiles.active=cloud-native
+```
+
+Or set environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `CLOUD_NATIVE_ENDPOINT` | `http://localhost:9090/api/dispatch` | URL to POST job dispatch requests to |
+| `CLOUD_NATIVE_CALLBACK_URL` | `http://localhost:8080/api/jobs/callback` | URL the orchestrator POSTs status updates back to |
+
+### Callback Format
+
+The external orchestrator should POST to the callback URL with:
+
+```json
+{
+  "executionId": "123",
+  "status": "COMPLETED",
+  "errorMessage": "optional error details"
+}
+```
+
+Valid status values: `COMPLETED`, `FAILED`, `STOPPED`.
+
+### Defining Cloud-Native Jobs
+
+```java
+@BatchJob(
+    name = "my-etl-pipeline",
+    description = "ETL pipeline for data warehouse",
+    executionMode = ExecutionMode.CLOUD_NATIVE,
+    requiredParams = {"pipeline"},
+    maxConcurrency = 2
+)
+public class MyEtlJob implements JobHandler {
+    @Override
+    public void execute(JobContext context) throws Exception {
+        // This handler runs when executed locally (tests, dev mode)
+        // or when the orchestrator runs the containerised app.
+        String pipeline = context.requireParam("pipeline");
+        // ... do ETL work ...
+    }
+}
+```
+
+### Programmatic Registration
+
+```java
+jobRegistry.register(JobDefinition.builder("my-cloud-job")
+    .handler(ctx -> { /* ... */ })
+    .executionMode(ExecutionMode.CLOUD_NATIVE)
+    .requiredParams("input")
+    .build());
 ```
 
 ## Docker
@@ -158,17 +239,20 @@ fluffy-batch-starter/
     │   │   │   └── jobs/
     │   │   │       ├── DataSyncJob.java           # Sync job example
     │   │   │       ├── ReportGenerationJob.java   # Async job with params
-    │   │   │       └── LongRunningJob.java        # Stop/timeout demo
+    │   │   │       ├── LongRunningJob.java        # Stop/timeout demo
+    │   │   │       └── CloudNativeEtlJob.java     # Cloud-native execution demo
     │   │   └── resources/
     │   │       ├── application.yml                # Default config (H2, dashboard enabled)
-    │   │       └── application-postgres.yml       # PostgreSQL profile
+    │   │       ├── application-postgres.yml       # PostgreSQL profile
+    │   │       └── application-cloud-native.yml   # Cloud-native execution profile
     │   └── test/
     │       ├── java/com/fluffy/example/
     │       │   ├── ExampleApplicationTest.java
     │       │   └── jobs/
     │       │       ├── DataSyncJobTest.java
     │       │       ├── ReportGenerationJobTest.java
-    │       │       └── LongRunningJobTest.java
+    │       │       ├── LongRunningJobTest.java
+    │       │       └── CloudNativeEtlJobTest.java
     │       └── resources/
     │           └── application.yml                # Test config (H2)
     ├── k8s/

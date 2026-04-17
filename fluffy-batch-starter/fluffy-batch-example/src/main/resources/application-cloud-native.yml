@@ -1,0 +1,16 @@
+# Cloud-native execution profile
+# Activate with: --spring.profiles.active=cloud-native
+#
+# This enables the cloud-native execution strategy, which dispatches jobs
+# annotated with executionMode = CLOUD_NATIVE to an external orchestrator
+# via HTTP POST instead of running them in-process.
+#
+# Override the endpoint and callback URL for your environment.
+fluffy:
+  batch:
+    cloud-native:
+      enabled: true
+      endpoint: ${CLOUD_NATIVE_ENDPOINT:http://localhost:9090/api/dispatch}
+      callback-url: ${CLOUD_NATIVE_CALLBACK_URL:http://localhost:8080/api/jobs/callback}
+      connect-timeout-seconds: 10
+      request-timeout-seconds: 30
