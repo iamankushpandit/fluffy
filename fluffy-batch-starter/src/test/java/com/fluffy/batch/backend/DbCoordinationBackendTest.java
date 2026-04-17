@@ -58,9 +58,9 @@ class DbCoordinationBackendTest {
     }
 
     @Test
-    void shouldCountStartingAsRunning() {
+    void shouldNotCountStartingAsRunning() {
         createExecution("startingtest", BatchStatus.STARTING);
-        assertThat(coordinationBackend.getRunningCount("startingtest")).isEqualTo(1);
+        assertThat(coordinationBackend.getRunningCount("startingtest")).isZero();
     }
 
     @Test

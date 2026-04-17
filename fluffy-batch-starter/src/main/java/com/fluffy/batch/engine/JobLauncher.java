@@ -36,6 +36,7 @@ public class JobLauncher {
     private final ExecutorService executorService;
     private final ScheduledExecutorService scheduledExecutorService;
     private final ObjectMapper objectMapper;
+    private final String nodeId;
 
     private final Map<Long, JobContext> runningContexts = new ConcurrentHashMap<>();
     private final Map<Long, Future<?>> runningFutures = new ConcurrentHashMap<>();
@@ -54,6 +55,14 @@ public class JobLauncher {
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.objectMapper = objectMapper;
+        this.nodeId = NodeIdResolver.getNodeId();
+    }
+
+    /**
+     * Returns the identifier of the node this launcher is running on.
+     */
+    public String getNodeId() {
+        return nodeId;
     }
 
     @Transactional
@@ -81,6 +90,7 @@ public class JobLauncher {
         execution.setStartTime(Instant.now());
         execution.setArguments(request.arguments());
         execution.setParameters(paramsToString(params));
+        execution.setOwnerNode(nodeId);
         execution = executionRepository.save(execution);
 
         Long executionId = execution.getId();
@@ -201,11 +211,16 @@ public class JobLauncher {
             }
             JobContext nextContext = runningContexts.get(nextId);
             if (nextContext == null) {
+                // Context may reside on a different node — reconstruct from database
+                nextContext = reconstructContext(nextId);
+            }
+            if (nextContext == null) {
                 log.warn("No context found for queued executionId={}, skipping", nextId);
                 continue;
             }
             JobDefinition def = jobRegistry.get(jobName);
             coordinationBackend.increment(jobName);
+            updateOwnerNode(nextId, nodeId);
             updateStatus(nextId, BatchStatus.STARTED);
             if (def.async()) {
                 runJobAsync(nextId, def, nextContext);
@@ -261,4 +276,23 @@ public class JobLauncher {
             return new HashMap<>();
         }
     }
+
+    private JobContext reconstructContext(Long executionId) {
+        return executionRepository.findById(executionId)
+                .map(exec -> new JobContext(
+                        exec.getId(),
+                        exec.getJobName(),
+                        exec.getRequestedBy(),
+                        stringToParams(exec.getParameters()),
+                        exec.getArguments()))
+                .orElse(null);
+    }
+
+    private void updateOwnerNode(Long executionId, String owner) {
+        executionRepository.findById(executionId).ifPresent(exec -> {
+            exec.setOwnerNode(owner);
+            executionRepository.save(exec);
+        });
+    }
+
 }

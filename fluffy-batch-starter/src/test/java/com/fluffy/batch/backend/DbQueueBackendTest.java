@@ -22,7 +22,7 @@ class DbQueueBackendTest {
     @BeforeEach
     void setUp() {
         queueEntryRepository.deleteAll();
-        queueBackend = new DbQueueBackend(queueEntryRepository);
+        queueBackend = new DbQueueBackend(queueEntryRepository, "test-node");
     }
 
     @Test
@@ -78,5 +78,31 @@ class DbQueueBackendTest {
     @Test
     void shouldReturnNullPositionForUnknownId() {
         assertThat(queueBackend.getPosition(999L)).isNull();
+    }
+
+    @Test
+    void shouldSetClaimedByAndClaimedAtOnPoll() {
+        queueBackend.enqueue(42L);
+
+        Long polled = queueBackend.poll();
+        assertThat(polled).isEqualTo(42L);
+
+        QueueEntry entry = queueEntryRepository.findByExecutionId(42L).orElseThrow();
+        assertThat(entry.getStatus()).isEqualTo("CLAIMED");
+        assertThat(entry.getClaimedBy()).isEqualTo("test-node");
+        assertThat(entry.getClaimedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldNotClaimAlreadyClaimedEntry() {
+        queueBackend.enqueue(100L);
+
+        // First poll claims it
+        Long first = queueBackend.poll();
+        assertThat(first).isEqualTo(100L);
+
+        // Second poll should find nothing
+        Long second = queueBackend.poll();
+        assertThat(second).isNull();
     }
 }

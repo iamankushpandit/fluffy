@@ -5,6 +5,7 @@ import com.fluffy.batch.backend.CoordinationBackend;
 import com.fluffy.batch.backend.DbCoordinationBackend;
 import com.fluffy.batch.backend.DbQueueBackend;
 import com.fluffy.batch.backend.QueueBackend;
+import com.fluffy.batch.engine.NodeIdResolver;
 import com.fluffy.batch.persistence.JobExecutionRepository;
 import com.fluffy.batch.persistence.QueueEntryRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -21,7 +22,7 @@ public class DatabaseBackendAutoConfiguration {
 
     @Bean
     public QueueBackend queueBackend(QueueEntryRepository queueEntryRepository) {
-        return new DbQueueBackend(queueEntryRepository);
+        return new DbQueueBackend(queueEntryRepository, NodeIdResolver.getNodeId());
     }
 
     @Bean
