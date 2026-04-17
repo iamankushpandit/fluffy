@@ -403,7 +403,7 @@
 
     React.useEffect(function () {
       if (config && config.title) {
-        document.title = 'Fluffy Scheduler';
+        document.title = config.title + ' — Scheduler';
       }
     }, [config]);
 

@@ -5,6 +5,7 @@ import com.fluffy.batch.engine.JobLauncher;
 import com.fluffy.batch.engine.JobRegistry;
 import com.fluffy.batch.persistence.CronScheduleRepository;
 import com.fluffy.batch.web.CronScheduleController;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,23 +31,24 @@ public class CronScheduleAutoConfiguration implements SchedulingConfigurer {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final CronScheduleRepository scheduleRepository;
-    private CronJobScheduler cronJobSchedulerInstance;
+    private final ObjectProvider<CronJobScheduler> cronJobSchedulerProvider;
 
     public CronScheduleAutoConfiguration(CronScheduleProperties properties,
                                           JobLauncher jobLauncher,
                                           JobRegistry jobRegistry,
-                                          CronScheduleRepository scheduleRepository) {
+                                          CronScheduleRepository scheduleRepository,
+                                          ObjectProvider<CronJobScheduler> cronJobSchedulerProvider) {
         this.properties = properties;
         this.jobLauncher = jobLauncher;
         this.jobRegistry = jobRegistry;
         this.scheduleRepository = scheduleRepository;
+        this.cronJobSchedulerProvider = cronJobSchedulerProvider;
     }
 
     @Bean
     public CronJobScheduler cronJobScheduler() {
         CronJobScheduler scheduler = new CronJobScheduler(jobLauncher, jobRegistry, scheduleRepository, properties);
         scheduler.initializeSchedules();
-        this.cronJobSchedulerInstance = scheduler;
         return scheduler;
     }
 
@@ -57,11 +59,9 @@ public class CronScheduleAutoConfiguration implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        // Use the Spring-managed bean instance instead of calling cronJobScheduler() again
-        CronJobScheduler scheduler = this.cronJobSchedulerInstance;
-        if (scheduler == null) {
-            scheduler = cronJobScheduler();
-        }
+        // Use ObjectProvider to get the Spring-managed bean (avoids duplicate
+        // instance since @AutoConfiguration uses proxyBeanMethods=false)
+        CronJobScheduler scheduler = cronJobSchedulerProvider.getObject();
         // Evaluate cron schedules every 60 seconds
         taskRegistrar.addFixedRateTask(scheduler::evaluateSchedules, 60_000L);
     }

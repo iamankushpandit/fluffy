@@ -28,6 +28,10 @@ fluffy:
       title: Fluffy Batch Dashboard
     metrics:
       enabled: true
+    cron:
+      enabled: true
+      schedules:
+        report-generation: "0 30 2 * * *"
 
 management:
   endpoints:

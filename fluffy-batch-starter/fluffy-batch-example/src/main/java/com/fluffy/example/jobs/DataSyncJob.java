@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
     description = "Synchronizes data between systems",
     async = true,
     maxConcurrency = 1,
-    timeoutSeconds = 360
+    timeoutSeconds = 360,
+    cronExpression = "0 0 * * * *"
 )
 public class DataSyncJob implements JobHandler {
 
