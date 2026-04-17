@@ -111,6 +111,7 @@ Detailed documentation is available in the [`docs/`](docs/) directory:
 - [Scaling](docs/scaling.md)
 - [Fault Tolerance & Recovery](docs/recovery.md)
 - [Aggregator Dashboard](docs/aggregator.md)
+- [Industry Use Cases & Advertisement](docs/use-cases-and-advertisement.md)
 - [Postman Collection](docs/fluffy-batch.postman_collection.json)
 
 ### Cloud Deployment Guides
