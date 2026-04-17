@@ -410,9 +410,6 @@
     // Collect unique node URLs and job names
     var nodes = [];
     var nodesSeen = {};
-    if (config && config.nodeCount) {
-      // from schedules or upcoming
-    }
     schedules.forEach(function (s) {
       var n = s.nodeUrl;
       if (n && !nodesSeen[n]) { nodesSeen[n] = true; nodes.push(n); }

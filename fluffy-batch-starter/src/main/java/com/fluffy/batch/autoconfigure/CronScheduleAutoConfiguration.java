@@ -30,6 +30,7 @@ public class CronScheduleAutoConfiguration implements SchedulingConfigurer {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final CronScheduleRepository scheduleRepository;
+    private CronJobScheduler cronJobSchedulerInstance;
 
     public CronScheduleAutoConfiguration(CronScheduleProperties properties,
                                           JobLauncher jobLauncher,
@@ -45,6 +46,7 @@ public class CronScheduleAutoConfiguration implements SchedulingConfigurer {
     public CronJobScheduler cronJobScheduler() {
         CronJobScheduler scheduler = new CronJobScheduler(jobLauncher, jobRegistry, scheduleRepository, properties);
         scheduler.initializeSchedules();
+        this.cronJobSchedulerInstance = scheduler;
         return scheduler;
     }
 
@@ -55,7 +57,11 @@ public class CronScheduleAutoConfiguration implements SchedulingConfigurer {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        CronJobScheduler scheduler = cronJobScheduler();
+        // Use the Spring-managed bean instance instead of calling cronJobScheduler() again
+        CronJobScheduler scheduler = this.cronJobSchedulerInstance;
+        if (scheduler == null) {
+            scheduler = cronJobScheduler();
+        }
         // Evaluate cron schedules every 60 seconds
         taskRegistrar.addFixedRateTask(scheduler::evaluateSchedules, 60_000L);
     }
